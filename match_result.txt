@@ -1,0 +1,13 @@
+===== MATCH HISTORY =====
+1. P1 hit at 100001
+2. P2 hit at 100002
+3. P1 hit at 100003
+4. P1 hit at 100004
+5. P2 hit at 100005
+6. P1 hit at 100006
+7. P1 hit at 100007
+8. P2 hit at 100008 (ignored: match already ended)
+========================
+Final Score: 5 - 2
+Winner: Player 1
+========================
