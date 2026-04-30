@@ -7,7 +7,7 @@ def main():
 
     # use mock mode for Week 4 testing
     # change to "real" later when hardware UUIDs are ready
-    receiver = LaptopBLEReceiver(mode="mock")
+    receiver = LaptopBLEReceiver(mode="real")
 
     receiver.start()
 
