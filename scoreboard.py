@@ -1,6 +1,5 @@
-# scoreboard.py
-
 from colorama import Fore, init
+import time
 
 # initialize colorama
 init(autoreset=True)
@@ -27,6 +26,11 @@ class Scoreboard:
         self.counted_hits = set()
         self.event_history = []
 
+        # timing / lockout system
+        self.last_hit_time = None
+        self.last_hit_player = None
+        self.lockout_window = 0.3  # 300 ms
+
     def update_score(self, parsed_packet):
 
         if parsed_packet is None:
@@ -35,30 +39,62 @@ class Scoreboard:
 
         player_id = parsed_packet["player_id"]
         hit_type = parsed_packet["hit_type"]
-        time = parsed_packet["time"]
+        time_stamp = parsed_packet["time"]
 
         # if match already ended
         if self.match_over:
-            event_text = f"{player_id} {hit_type} at {time} (ignored: match already ended)"
+            event_text = f"{player_id} {hit_type} at {time_stamp} (ignored: match already ended)"
             self.event_history.append(event_text)
             print(Fore.MAGENTA + "Match already ended, score not updated")
             return
 
         # log event
-        event_text = f"{player_id} {hit_type} at {time}"
+        event_text = f"{player_id} {hit_type} at {time_stamp}"
         self.event_history.append(event_text)
 
         if hit_type != "hit":
             print(Fore.YELLOW + "No score change because event was not a hit")
             return
 
-        hit_key = (player_id, hit_type, time)
+        hit_key = (player_id, hit_type, time_stamp)
 
         if hit_key in self.counted_hits:
             print(Fore.YELLOW + "Duplicate hit packet detected, score not updated")
             return
 
         self.counted_hits.add(hit_key)
+
+        current_time = time.time()
+
+        # check timing window
+        if self.last_hit_time is not None:
+            time_difference = current_time - self.last_hit_time
+
+            if time_difference < self.lockout_window:
+
+                # different players → simultaneous hit
+                if player_id != self.last_hit_player:
+                    print(Fore.YELLOW + "Simultaneous hit detected")
+
+                    if player_id == "P1":
+                        self.player_1_score += 1
+                        print(Fore.GREEN + "Point awarded to Player 1")
+
+                    elif player_id == "P2":
+                        self.player_2_score += 1
+                        print(Fore.RED + "Point awarded to Player 2")
+
+                    self.check_winner()
+                    return
+
+                # same player spam → ignore
+                else:
+                    print(Fore.YELLOW + "Hit ignored (same player inside lockout window)")
+                    return
+
+        # normal hit (outside lockout)
+        self.last_hit_time = current_time
+        self.last_hit_player = player_id
 
         if player_id == "P1":
             self.player_1_score += 1
@@ -125,3 +161,14 @@ class Scoreboard:
             file.write("========================\n")
 
         print(Fore.CYAN + f"Match history saved to {filename}")
+
+    def reset_match(self):
+        self.player_1_score = 0
+        self.player_2_score = 0
+        self.match_over = False
+        self.winner = None
+        self.counted_hits.clear()
+        self.event_history = []
+        self.last_hit_time = None
+        self.last_hit_player = None
+

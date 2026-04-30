@@ -15,6 +15,7 @@ class LaptopBLEReceiver:
         self.packet_count = 0
 
         # use pool rules first to 5
+        # use de rules first to 15
         self.scoreboard = Scoreboard(bout_type="pool")
 
         # choose between mock (testing) and real BLE (PSoC 6)
@@ -74,12 +75,19 @@ class LaptopBLEReceiver:
 
         print("Receiver ready for incoming BLE data")
         print("Current mode:", self.mode)
-        print("Scoreboard mode: pool bout, first to 5\n")
+        print(f"Scoreboard mode: {self.scoreboard.bout_type} bout, first to {self.scoreboard.winning_score}\n")
 
-        # mock BLE calls the same callback that real BLE will use later
+        # --- reset thread ---
+        import threading
+
+        def wait_for_reset():
+            while True:
+                cmd = input()
+                if cmd.lower() == "r":
+                    self.scoreboard.reset_match()
+                    print("\n--- Match Reset ---\n")
+
+        threading.Thread(target=wait_for_reset, daemon=True).start()
+        # --- end reset thread ---
+
         self.device.start_notifications(self.handle_notification)
-
-        print("\nAll packets processed")
-
-        self.scoreboard.print_match_history()
-        self.scoreboard.save_match_history()
