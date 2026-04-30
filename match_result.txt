@@ -1,17 +1,15 @@
 ===== MATCH HISTORY =====
-1. P1 hit at 85
-2. P2 hit at 62
-3. P2 hit at 63
-4. P1 hit at 86
-5. P1 hit at 87
-6. P2 hit at 64
-7. P2 hit at 65
-8. P1 hit at 88
-9. P1 hit at 89
-10. P1 hit at 90 (ignored: match already ended)
-11. P2 hit at 66 (ignored: match already ended)
-12. P1 hit at 91 (ignored: match already ended)
+1. P2 hit at 74
+2. P2 hit at 75
+3. P2 hit at 76
+4. P1 hit at 98
+5. P1 hit at 99
+6. P1 hit at 100
+7. P1 hit at 101
+8. P1 hit at 102
+9. P1 hit at 103 (ignored: match already ended)
+10. P2 hit at 77 (ignored: match already ended)
 ========================
-Final Score: 5 - 4
+Final Score: 5 - 3
 Winner: Player 1
 ========================
