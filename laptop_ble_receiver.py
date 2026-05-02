@@ -16,7 +16,7 @@ class LaptopBLEReceiver:
 
         # use pool rules first to 5
         # use de rules first to 15
-        self.scoreboard = Scoreboard(bout_type="pool")
+        self.scoreboard = Scoreboard(bout_type="de")
 
         # choose between mock (testing) and real BLE (PSoC 6)
         if self.mode == "real":

@@ -1,6 +1,0 @@
-C:\Program Files (x86)\Cypress\PSoC Creator\4.4\PSoC Creator\psoc\content\default\CyAnnotationLibrary\CyAnnotationLibrary.cylib\CyAnnotationLibrary.cyprj|ec183a7b-dd1b-4200-903c-4010222821a0
-C:\Users\steamkid\Documents\PSoC Creator\4.4\Downloads ( 4.4).cylib\Downloads ( 4.4).cyprj|1aa6a785-196f-4963-b762-99b0892e4be6
-C:\Program Files (x86)\Cypress\PSoC Creator\4.4\PSoC Creator\psoc\content\cycomponentlibraryupdates\CyComponentLibraryUpdates.cylib\CyComponentLibraryUpdates.cyprj|74647c56-2870-48a5-ac92-66ff73deaa97
-C:\Program Files (x86)\Cypress\PSoC Creator\4.4\PSoC Creator\psoc\content\cycomponentlibrary\CyComponentLibrary.cylib\CyComponentLibrary.cyprj|6f8afcf0-5aa8-4a77-9cd0-d1ad5d0db573
-C:\Program Files (x86)\Cypress\PSoC Creator\4.4\PSoC Creator\psoc\content\cyprimitives\CyPrimitives.cylib\CyPrimitives.cyprj|f583ade9-776a-4279-86e7-d2304c7dba75
-C:\Users\steamkid\Documents\PSoC Creator\Workspace01\Fencing_P1_GPIO_Test.cydsn\Fencing_P1_GPIO_Test.cyprj|a935db53-8d43-44d5-9cae-1d0134f1d32b

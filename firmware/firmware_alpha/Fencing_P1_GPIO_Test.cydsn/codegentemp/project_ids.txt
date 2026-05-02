@@ -1,0 +1,6 @@
+C:\Users\Bryce\Documents2\PisteNet\fencing-electronic-design-project-kilo\firmware\Fencing_P1_GPIO_Test.cydsn\Fencing_P1_GPIO_Test.cyprj|d9c58cfc-51a6-4dbb-b777-142350e51f71
+C:\Program Files (x86)\Cypress\PSoC Creator\4.4\PSoC Creator\psoc\content\default\CyAnnotationLibrary\CyAnnotationLibrary.cylib\CyAnnotationLibrary.cyprj|2b49e15f-db33-47eb-8088-f2780236bee4
+C:\Users\Bryce\Documents\PSoC Creator\4.4\Downloads ( 4.4).cylib\Downloads ( 4.4).cyprj|3870b6ba-60e9-4a8e-9532-a9d76ba6cc26
+C:\Program Files (x86)\Cypress\PSoC Creator\4.4\PSoC Creator\psoc\content\cycomponentlibraryupdates\CyComponentLibraryUpdates.cylib\CyComponentLibraryUpdates.cyprj|41b4a5bf-c473-4c9d-ad6c-f9835c0d89ef
+C:\Program Files (x86)\Cypress\PSoC Creator\4.4\PSoC Creator\psoc\content\cycomponentlibrary\CyComponentLibrary.cylib\CyComponentLibrary.cyprj|b4112499-6e6a-4ddd-b44e-e72993c38668
+C:\Program Files (x86)\Cypress\PSoC Creator\4.4\PSoC Creator\psoc\content\cyprimitives\CyPrimitives.cylib\CyPrimitives.cyprj|c11ee37a-4700-4814-aaca-10264d2742b6
