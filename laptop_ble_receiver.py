@@ -18,7 +18,6 @@ class LaptopBLEReceiver:
         # use de rules first to 15
         self.scoreboard = Scoreboard(bout_type="de")
 
-        # choose between mock (testing) and real BLE (PSoC 6)
         if self.mode == "real":
             self.device = RealBLEDevice()
         else:
@@ -39,17 +38,13 @@ class LaptopBLEReceiver:
             print("Decode error")
             return
 
-        print("Decoded:", data)
+        print(f"[BLE SENSOR OUTPUT] {data.strip()}")
 
-        # send decoded data into the normal software pipeline
         self.handle_packet_data(data)
 
     def handle_packet_data(self, data):
 
-        # queue packet first
         self.packet_queue.append(data)
-
-        # process immediately to keep real-time behavior
         self.process_next_packet()
 
     def process_next_packet(self):
@@ -75,19 +70,37 @@ class LaptopBLEReceiver:
 
         print("Receiver ready for incoming BLE data")
         print("Current mode:", self.mode)
-        print(f"Scoreboard mode: {self.scoreboard.bout_type} bout, first to {self.scoreboard.winning_score}\n")
+        print(f"Scoreboard mode: {self.scoreboard.bout_type} bout, first to {self.scoreboard.winning_score}")
+        print("\nCommands:")
+        print("r = reset match")
+        print("h = print match history")
+        print("s = save match history")
+        print("q = quit program\n")
 
-        # --- reset thread ---
         import threading
+        import os
 
-        def wait_for_reset():
+        def command_loop():
             while True:
-                cmd = input()
-                if cmd.lower() == "r":
+                cmd = input().strip().lower()
+
+                if cmd == "r":
                     self.scoreboard.reset_match()
                     print("\n--- Match Reset ---\n")
 
-        threading.Thread(target=wait_for_reset, daemon=True).start()
-        # --- end reset thread ---
+                elif cmd == "h":
+                    self.scoreboard.print_match_history()
+
+                elif cmd == "s":
+                    self.scoreboard.save_match_history()
+
+                elif cmd == "q":
+                    print("Manual quit selected")
+                    os._exit(0)
+
+                else:
+                    print("Unknown command. Use r, h, s, or q.")
+
+        threading.Thread(target=command_loop, daemon=True).start()
 
         self.device.start_notifications(self.handle_notification)

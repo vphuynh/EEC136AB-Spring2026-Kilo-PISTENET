@@ -23,13 +23,18 @@ class Scoreboard:
         self.match_over = False
         self.winner = None
 
+        # track match timer
+        self.match_start_time = time.time()
+
         self.counted_hits = set()
         self.event_history = []
 
         # timing / lockout system
         self.last_hit_time = None
         self.last_hit_player = None
-        self.lockout_window = 0.3  # 300 ms
+
+        # slightly larger for more stable physical testing
+        self.lockout_window = 0.5
 
     def update_score(self, parsed_packet):
 
@@ -49,7 +54,7 @@ class Scoreboard:
             return
 
         # log event
-        event_text = f"{player_id} {hit_type} at {time_stamp}"
+        event_text = f"[{time_stamp}] {player_id} {hit_type}"
         self.event_history.append(event_text)
 
         if hit_type != "hit":
@@ -111,6 +116,7 @@ class Scoreboard:
         self.check_winner()
 
     def check_winner(self):
+
         if self.player_1_score >= self.winning_score:
             self.match_over = True
             self.winner = "Player 1"
@@ -119,9 +125,19 @@ class Scoreboard:
             self.match_over = True
             self.winner = "Player 2"
 
+        # auto save at end of match
+        if self.match_over:
+            self.save_match_history()
+
     def print_scoreboard(self):
-        print(Fore.CYAN + "======================")
+
+        elapsed_time = round(time.time() - self.match_start_time, 1)
+
+        print(Fore.CYAN + "\n======================")
         print(Fore.CYAN + "   FENCING SCOREBOARD")
+        print(Fore.CYAN + f"   Mode: {self.bout_type.upper()} | First to {self.winning_score}")
+        print(Fore.CYAN + f"   Match Time: {elapsed_time}s")
+        print(Fore.CYAN + "----------------------")
         print(Fore.GREEN + f"   Player 1: {self.player_1_score}")
         print(Fore.RED + f"   Player 2: {self.player_2_score}")
         print(Fore.CYAN + "======================")
@@ -132,6 +148,7 @@ class Scoreboard:
             print(Fore.CYAN + "======================")
 
     def print_match_history(self):
+
         print("\n===== MATCH HISTORY =====")
 
         for i, event in enumerate(self.event_history, start=1):
@@ -146,7 +163,9 @@ class Scoreboard:
         print("========================")
 
     def save_match_history(self, filename="match_result.txt"):
+
         with open(filename, "w") as file:
+
             file.write("===== MATCH HISTORY =====\n")
 
             for i, event in enumerate(self.event_history, start=1):
@@ -163,12 +182,20 @@ class Scoreboard:
         print(Fore.CYAN + f"Match history saved to {filename}")
 
     def reset_match(self):
+
         self.player_1_score = 0
         self.player_2_score = 0
+
         self.match_over = False
         self.winner = None
+
         self.counted_hits.clear()
         self.event_history = []
+
         self.last_hit_time = None
         self.last_hit_player = None
 
+        # restart timer
+        self.match_start_time = time.time()
+
+        print(Fore.CYAN + "Match reset complete")

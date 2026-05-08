@@ -4,24 +4,34 @@
 # and breaks it into parts so we can actually use the data
 def parse_data(data):
 
-    # remove any extra spaces or newline characters
     data = data.strip()
 
-    # if nothing was entered, just ignore it
     if data == "":
         return None
 
-    # split the string by commas
     parts = data.split(",")
 
-    # make sure we actually got 3 pieces
     if len(parts) != 3:
         return None
 
-    # unpack the values into variables
     player_id, hit_type, time = parts
 
-    # return the parsed data in a clean structure
+    player_id = player_id.strip()
+    hit_type = hit_type.strip().lower()
+    time = time.strip()
+
+    # only accept player 1 or player 2
+    if player_id not in ["P1", "P2"]:
+        return None
+
+    # only accept hit events for now
+    if hit_type != "hit":
+        return None
+
+    # make sure timestamp / hit id is not empty
+    if time == "":
+        return None
+
     return {
         "player_id": player_id,
         "hit_type": hit_type,
@@ -32,13 +42,11 @@ def parse_data(data):
 # this function prints parsed packet data in a clean way
 def print_parsed(data):
 
-    # if parsing failed, show invalid packet
     if data is None:
         print("Invalid packet")
         print("----------------------")
         return
 
-    # print the packet contents
     print("Received Packet:")
     print("Player:", data["player_id"])
     print("Hit Type:", data["hit_type"])

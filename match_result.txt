@@ -1,10 +1,11 @@
 ===== MATCH HISTORY =====
-1. P1 hit at 78
-2. P1 hit at 79
-3. P1 hit at 80
-4. P1 hit at 81
-5. P1 hit at 82
+1. [18] P1 hit
+2. [19] P1 hit
+3. [20] P1 hit
+4. [21] P1 hit
+5. [22] P1 hit
+6. [23] P1 hit
+7. [24] P1 hit
 ========================
-Final Score: 5 - 0
-Winner: Player 1
+Final Score: 4 - 0
 ========================
