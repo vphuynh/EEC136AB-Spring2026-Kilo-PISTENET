@@ -4,6 +4,9 @@
 # and breaks it into parts so we can actually use the data
 def parse_data(data):
 
+    if data is None:
+        return None
+
     data = data.strip()
 
     if data == "":
@@ -14,11 +17,11 @@ def parse_data(data):
     if len(parts) != 3:
         return None
 
-    player_id, hit_type, time = parts
+    player_id, hit_type, time_stamp = parts
 
-    player_id = player_id.strip()
+    player_id = player_id.strip().upper()
     hit_type = hit_type.strip().lower()
-    time = time.strip()
+    time_stamp = time_stamp.strip()
 
     # only accept player 1 or player 2
     if player_id not in ["P1", "P2"]:
@@ -28,14 +31,14 @@ def parse_data(data):
     if hit_type != "hit":
         return None
 
-    # make sure timestamp / hit id is not empty
-    if time == "":
+    # make sure timestamp / hit id exists
+    if time_stamp == "":
         return None
 
     return {
         "player_id": player_id,
         "hit_type": hit_type,
-        "time": time
+        "time": time_stamp
     }
 
 
@@ -50,5 +53,5 @@ def print_parsed(data):
     print("Received Packet:")
     print("Player:", data["player_id"])
     print("Hit Type:", data["hit_type"])
-    print("Time:", data["time"])
+    print("Time/Hit ID:", data["time"])
     print("----------------------")
