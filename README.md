@@ -13,10 +13,6 @@ Make sure:
 Terminal commands:
 
 r = reset match
-h = print match history
-s = save match history
-p = print raw packet log
-l = save raw packet log
 q = quit program
 
 for web scoreboard: open http://127.0.0.1:5000, after running python3 main.py

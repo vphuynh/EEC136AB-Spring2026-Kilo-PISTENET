@@ -22,25 +22,28 @@ class RealBLEDevice:
             asyncio.run(self.run_ble(callback))
         except KeyboardInterrupt:
             print("\nManual stop selected. BLE receiver closed.")
+        except Exception as error:
+            print("BLE receiver stopped because of an error:")
+            print(error)
 
     async def connect_one_device(self, device_name, callback):
 
         while True:
-            self.update_status(device_name, "scanning")
-            print("Scanning for:", device_name)
-
-            device = await BleakScanner.find_device_by_name(device_name, timeout=15)
-
-            if device is None:
-                self.update_status(device_name, "not found")
-                print("Could not find", device_name)
-                print("Trying again in 3 seconds...\n")
-                await asyncio.sleep(3)
-                continue
-
-            print("Found:", device.name, device.address)
-
             try:
+                self.update_status(device_name, "scanning")
+                print("Scanning for:", device_name)
+
+                device = await BleakScanner.find_device_by_name(device_name, timeout=15)
+
+                if device is None:
+                    self.update_status(device_name, "not found")
+                    print("Could not find", device_name)
+                    print("Trying again in 3 seconds...\n")
+                    await asyncio.sleep(3)
+                    continue
+
+                print("Found:", device.name, device.address)
+
                 async with BleakClient(device) as client:
                     self.update_status(device_name, "connected")
                     print("Connected to", device_name)
@@ -104,7 +107,12 @@ class RealBLEDevice:
         print("Real BLE mode selected")
         print("Connecting to both devices...\n")
 
-        await asyncio.gather(
+        results = await asyncio.gather(
             self.connect_one_device("Fencing_P1", callback),
-            self.connect_one_device("Fencing_P2", callback)
+            self.connect_one_device("Fencing_P2", callback),
+            return_exceptions=True
         )
+
+        for result in results:
+            if isinstance(result, Exception):
+                print("BLE task ended with error:", result)

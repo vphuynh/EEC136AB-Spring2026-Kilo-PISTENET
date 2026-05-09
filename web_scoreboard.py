@@ -83,6 +83,32 @@ class WebScoreboard:
         def weapon_saber():
             self.scoreboard.set_weapon("saber")
             return jsonify({"status": "saber selected"})
+        
+        @self.app.route("/card/p1/yellow", methods=["POST"])
+        def card_p1_yellow():
+            self.scoreboard.add_card("P1", "yellow")
+            return jsonify({"status": "P1 yellow card"})
+
+        @self.app.route("/card/p1/red", methods=["POST"])
+        def card_p1_red():
+            self.scoreboard.add_card("P1", "red")
+            return jsonify({"status": "P1 red card"})
+
+        @self.app.route("/card/p2/yellow", methods=["POST"])
+        def card_p2_yellow():
+            self.scoreboard.add_card("P2", "yellow")
+            return jsonify({"status": "P2 yellow card"})
+
+        @self.app.route("/card/p2/red", methods=["POST"])
+        def card_p2_red():
+            self.scoreboard.add_card("P2", "red")
+            return jsonify({"status": "P2 red card"})
+
+        @self.app.route("/card/clear", methods=["POST"])
+        def card_clear():
+            self.scoreboard.clear_cards()
+            return jsonify({"status": "cards cleared"})
+
 
     def start(self):
         thread = threading.Thread(target=self.run_server, daemon=True)
@@ -256,6 +282,9 @@ PAGE_HTML = """
             font-weight: 900;
             line-height: 1;
             margin-top: 44px;
+            transition:
+                transform 0.15s,
+                text-shadow 0.2s;
         }
 
         .center-console {
@@ -375,6 +404,54 @@ PAGE_HTML = """
             gap: 8px;
         }
 
+        .screen-flash {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 999;
+            transition: opacity 0.25s;
+        }
+
+        .screen-flash-p1 {
+            background: linear-gradient(90deg, rgba(52,255,170,0.42), transparent 65%);
+        }
+
+        .screen-flash-p2 {
+            background: linear-gradient(270deg, rgba(255,80,105,0.42), transparent 65%);
+        }        
+
+        .screen-flash-show {
+            opacity: 1;
+        }
+
+        .timer-warning {
+            color: #ff5069 !important;
+            text-shadow: 0 0 30px rgba(255, 80, 105, 0.9);
+            animation: pulseTimer 0.8s infinite;
+        }
+
+        .match-point {
+            margin-top: 10px;
+            color: #facc15;
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            min-height: 22px;
+        }        
+
+        @keyframes pulseTimer {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.06);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
         button {
             background: rgba(255,255,255,0.075);
             color: white;
@@ -427,12 +504,12 @@ PAGE_HTML = """
 
         .flash-p1 {
             box-shadow: 0 0 80px rgba(52,255,170,0.9);
-            transform: scale(1.025);
+            transform: scale(1.04);
         }
 
         .flash-p2 {
             box-shadow: 0 0 80px rgba(255,80,105,0.9);
-            transform: scale(1.025);
+            transform: scale(1.04);
         }
 
         .overlay {
@@ -448,6 +525,31 @@ PAGE_HTML = """
             border: 1px solid rgba(250,204,21,0.45);
             box-shadow: 0 0 45px rgba(250,204,21,0.25);
             text-align: center;
+            animation: winnerPulse 1.2s infinite;
+            backdrop-filter: blur(8px);
+        }
+
+        @keyframes winnerPulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 40px rgba(250,204,21,0.25);
+            }
+
+            50% {
+                transform: scale(1.03);
+                box-shadow: 0 0 70px rgba(250,204,21,0.55);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 40px rgba(250,204,21,0.25);
+            }
+        }        
+
+        .card-display {
+            margin-top: 10px;
+            font-size: 36px;
+            min-height: 44px;
         }
 
         @media (max-width: 950px) {
@@ -468,12 +570,75 @@ PAGE_HTML = """
             .button-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
+
+            .scoring-status {
+                margin-top: 8px;
+                font-size: 14px;
+                letter-spacing: 2px;
+                color: #cbd5e1;
+            }
+
+            .scoring-active {
+                color: #34ffaa;
+            }
+
+            .scoring-disabled {
+                color: #ff5069;
+            }            
+
+        .fullscreen-btn {
+            position: fixed;
+            top: 18px;
+            right: 18px;
+            z-index: 1000;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            font-size: 22px;
+            padding: 0;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.18);
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(56,189,248,0.22);
+        }
+
+        .sound-btn {
+            position: fixed;
+            top: 70px;
+            right: 18px;
+            z-index: 1000;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            font-size: 20px;
+            padding: 0;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.18);
+        }
+
+        .sound-btn:hover {
+            background: rgba(56,189,248,0.22);
+        }
+
+        .small-clear-btn {
+            margin-bottom: 10px;
+            padding: 7px 12px;
+            font-size: 12px;
+            border-radius: 10px;
+            color: #cbd5e1;
+        }            
+
         }
     </style>
 </head>
 
 <body>
     <div class="arena-line"></div>
+    <button class="fullscreen-btn" onclick="toggleFullscreen()">⛶</button>
+    <button class="sound-btn" id="sound_btn" onclick="toggleSound()">🔊</button>
+    <div id="screen_flash" class="screen-flash"></div>
 
     <div class="page">
         <div class="title">
@@ -487,6 +652,7 @@ PAGE_HTML = """
                 <div class="fighter-label">LEFT STRIP</div>
                 <div class="fighter-name left-color">PLAYER 1</div>
                 <div class="score left-color" id="p1_score">0</div>
+                <div class="card-display" id="p1_cards"></div>
             </div>
 
             <div class="center-console">
@@ -494,6 +660,7 @@ PAGE_HTML = """
                 <div class="timer-time" id="timer_time">3:00</div>
                 <div class="timer-state" id="timer_state">Paused</div>
                 <div class="phrase" id="bout_phrase">EN GARDE</div>
+                <div class="match-point" id="match_point"></div>
                 <div class="last-hit" id="last_hit">Last Hit: None</div>
             </div>
 
@@ -501,6 +668,7 @@ PAGE_HTML = """
                 <div class="fighter-label">RIGHT STRIP</div>
                 <div class="fighter-name right-color">PLAYER 2</div>
                 <div class="score right-color" id="p2_score">0</div>
+                <div class="card-display" id="p2_cards"></div>
             </div>
         </div>
 
@@ -521,9 +689,9 @@ PAGE_HTML = """
                 <div class="control-section">
                     <div class="section-label">TIMER</div>
                     <div class="button-grid">
-                        <button class="good" onclick="sendCommand('/timer/start')">Start</button>
-                        <button onclick="sendCommand('/timer/pause')">Pause</button>
-                        <button onclick="sendCommand('/timer/reset')">Reset Timer</button>
+                        <button class="good" onclick="sendTimerCommand('/timer/start', 'ALLEZ')">Start</button>
+                        <button onclick="sendTimerCommand('/timer/pause', 'HALT')">Pause</button>
+                        <button onclick="sendTimerCommand('/timer/reset', 'EN GARDE')">Reset Timer</button>
                         <button class="danger" onclick="sendCommand('/reset')">Reset Match</button>
                     </div>
                 </div>
@@ -555,7 +723,20 @@ PAGE_HTML = """
                         <button onclick="sendCommand('/score/p2/sub')">P2 -1</button>
                     </div>
                 </div>
+
+                <div class="control-section">
+                    <div class="section-label">CARDS</div>
+                    <div class="button-grid">
+                        <button onclick="sendCommand('/card/p1/yellow')">P1 Yellow</button>
+                        <button class="danger" onclick="sendCommand('/card/p1/red')">P1 Red</button>
+                        <button onclick="sendCommand('/card/p2/yellow')">P2 Yellow</button>
+                        <button class="danger" onclick="sendCommand('/card/p2/red')">P2 Red</button>
+                        <button onclick="sendCommand('/card/clear')">Clear Cards</button>
+                    </div>
+                </div>
+
             </div>
+
 
             <div class="panel">
                 <div class="panel-title">SYSTEM TELEMETRY</div>
@@ -578,6 +759,7 @@ PAGE_HTML = """
 
             <div class="panel">
                 <div class="panel-title">SAVED MATCHES</div>
+                <button class="small-clear-btn" onclick="clearSavedMatches()">Clear Saved</button>
                 <div class="saved-list" id="saved_matches">No saved matches yet</div>
             </div>
         </div>
@@ -586,6 +768,37 @@ PAGE_HTML = """
     </div>
 
     <script>
+
+        let audioContext = null;
+        let soundEnabled = true;
+        let winnerSoundPlayed = false;
+
+        function playHitSound(frequency) {
+
+            if (!soundEnabled) {
+                return;
+            }
+
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            const oscillator = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+
+            oscillator.connect(gain);
+            gain.connect(audioContext.destination);
+
+            oscillator.frequency.value = frequency;
+            oscillator.type = "square";
+
+            gain.gain.setValueAtTime(0.08, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.18);
+
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.18);
+        }
+    
         let lastP1Score = 0;
         let lastP2Score = 0;
 
@@ -597,6 +810,63 @@ PAGE_HTML = """
                 card.classList.remove(className);
             }, 300);
         }
+
+        function flashScreen(className) {
+            const flash = document.getElementById("screen_flash");
+
+            flash.className = "screen-flash " + className + " screen-flash-show";
+
+            setTimeout(() => {
+                flash.className = "screen-flash";
+            }, 250);
+        }
+
+        function renderCards(containerId, cards) {
+
+            const container = document.getElementById(containerId);
+
+            if (!cards || cards.length === 0) {
+                container.innerHTML = "";
+                return;
+            }
+
+            let output = "";
+
+            cards.forEach((card) => {
+
+                if (card === "yellow") {
+                    output += "🟨 ";
+                }
+
+                else if (card === "red") {
+                    output += "🟥 ";
+                }
+            });
+
+            container.innerHTML = output;
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function toggleSound() {
+
+            soundEnabled = !soundEnabled;
+
+            const button = document.getElementById("sound_btn");
+
+            if (soundEnabled) {
+                button.innerText = "🔊";
+            } else {
+                button.innerText = "🔇";
+            }
+        }
+
 
         function updateStatus(elementId, status) {
             const element = document.getElementById(elementId);
@@ -677,8 +947,22 @@ PAGE_HTML = """
             });
         }
 
+        function clearSavedMatches() {
+            localStorage.removeItem("savedMatches");
+            renderSavedMatches();
+        }
+
+
         async function sendCommand(route) {
             await fetch(route, { method: "POST" });
+            updateScoreboard();
+        }
+
+        async function sendTimerCommand(route, phrase) {
+            await fetch(route, { method: "POST" });
+
+            document.getElementById("bout_phrase").innerText = phrase;
+
             updateScoreboard();
         }
 
@@ -702,12 +986,19 @@ PAGE_HTML = """
             document.getElementById("p1_score").innerText = data.player_1_score;
             document.getElementById("p2_score").innerText = data.player_2_score;
 
+            renderCards("p1_cards", data.player_1_cards);
+            renderCards("p2_cards", data.player_2_cards);
+
             if (data.player_1_score > lastP1Score) {
                 flashCard("p1_card", "flash-p1");
-            }
+                flashScreen("screen-flash-p1");
+                playHitSound(660);
+            }            
 
             if (data.player_2_score > lastP2Score) {
                 flashCard("p2_card", "flash-p2");
+                flashScreen("screen-flash-p2");
+                playHitSound(440);
             }
 
             lastP1Score = data.player_1_score;
@@ -719,12 +1010,52 @@ PAGE_HTML = """
             document.getElementById("runtime").innerText =
                 "Runtime: " + data.match_time + "s";
 
-            document.getElementById("timer_time").innerText = data.timer_display;
+            const timerElement = document.getElementById("timer_time");
+            timerElement.innerText = data.timer_display;
+
+            if (data.timer_seconds <= 30 && data.timer_seconds > 0) {
+                timerElement.classList.add("timer-warning");
+            } else {
+                timerElement.classList.remove("timer-warning");
+            }                
+
             document.getElementById("timer_state").innerText =
                 data.timer_running ? "Running" : "Paused";
 
-            document.getElementById("bout_phrase").innerText =
-                data.timer_running ? "ALLEZ" : "EN GARDE";
+            if (data.timer_seconds <= 0) {
+
+                document.getElementById("bout_phrase").innerText = "HALT";
+
+            }
+            else if (data.timer_running) {
+
+                document.getElementById("bout_phrase").innerText = "ALLEZ";
+
+            }
+            else {
+
+                if (
+                    data.player_1_score === 0 &&
+                    data.player_2_score === 0 &&
+                    data.timer_display === "3:00"
+                ) {
+
+                    document.getElementById("bout_phrase").innerText = "EN GARDE";
+
+                }
+                else {
+
+                    document.getElementById("bout_phrase").innerText = "HALT";
+
+                }
+            }               
+
+            if (data.match_point !== "None") {
+                document.getElementById("match_point").innerText =
+                    "MATCH POINT: " + data.match_point.toUpperCase();
+            } else {
+                document.getElementById("match_point").innerText = "";
+            }
 
             document.getElementById("packets").innerText =
                 "Valid Packets: " + data.valid_packets + " | Invalid Packets: " + data.invalid_packets;
@@ -735,10 +1066,15 @@ PAGE_HTML = """
             updateEventFeed(data.event_history);
 
             if (data.match_over) {
+                if (!winnerSoundPlayed) {
+                        playHitSound(880);
+                        winnerSoundPlayed = true;
+                    }
                 document.getElementById("winner").style.display = "block";
                 document.getElementById("winner").innerText =
-                    "MATCH OVER - " + data.winner + " Wins";
+                    "VICTORY — " + data.winner.toUpperCase();
             } else {
+                winnerSoundPlayed = false;
                 document.getElementById("winner").style.display = "none";
                 document.getElementById("winner").innerText = "";
             }

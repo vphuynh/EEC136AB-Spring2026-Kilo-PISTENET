@@ -12,9 +12,8 @@ class LaptopBLEReceiver:
 
     def __init__(self, mode="mock"):
         self.mode = mode
-        self.packet_queue = deque()
+        self.packet_queue = deque(maxlen=50)
         self.packet_count = 0
-        self.raw_packet_log = []
 
         self.device_status = {
             "Fencing_P1": "not connected",
@@ -34,6 +33,8 @@ class LaptopBLEReceiver:
             self.device = MockBLEDevice()
 
     def update_device_status(self, device_name, status):
+        if device_name not in self.device_status:
+            return
         self.device_status[device_name] = status
         self.scoreboard.device_status = self.device_status
         print(f"[STATUS] {device_name}: {status}")
@@ -48,12 +49,10 @@ class LaptopBLEReceiver:
         print("Raw bytes:", raw_bytes)
 
         try:
-            data = raw_bytes.decode("utf-8").strip()
+            data = raw_bytes.decode("utf-8", errors="replace").strip()
         except:
             print("Decode error - packet ignored")
             return
-
-        self.raw_packet_log.append(data)
 
         print(f"[BLE SENSOR OUTPUT] {data}")
 
@@ -84,30 +83,6 @@ class LaptopBLEReceiver:
 
         self.scoreboard.print_scoreboard()
 
-    def print_raw_packet_log(self):
-
-        print("\n===== RAW PACKET LOG =====")
-
-        if len(self.raw_packet_log) == 0:
-            print("No packets received yet")
-        else:
-            for i, packet in enumerate(self.raw_packet_log, start=1):
-                print(f"{i}. {packet}")
-
-        print("==========================")
-
-    def save_raw_packet_log(self, filename="raw_packet_log.txt"):
-
-        with open(filename, "w") as file:
-            file.write("===== RAW PACKET LOG =====\n")
-
-            for i, packet in enumerate(self.raw_packet_log, start=1):
-                file.write(f"{i}. {packet}\n")
-
-            file.write("==========================\n")
-
-        print(f"Raw packet log saved to {filename}")
-
     def start(self):
 
         self.web_scoreboard.start()
@@ -119,10 +94,6 @@ class LaptopBLEReceiver:
 
         print("\nCommands:")
         print("r = reset match")
-        print("h = print match history")
-        print("s = save match history")
-        print("p = print raw packet log")
-        print("l = save raw packet log")
         print("q = quit program\n")
 
         import threading
@@ -136,24 +107,12 @@ class LaptopBLEReceiver:
                     self.scoreboard.reset_match()
                     print("\n--- Match Reset ---\n")
 
-                elif cmd == "h":
-                    self.scoreboard.print_match_history()
-
-                elif cmd == "s":
-                    self.scoreboard.save_match_history()
-
-                elif cmd == "p":
-                    self.print_raw_packet_log()
-
-                elif cmd == "l":
-                    self.save_raw_packet_log()
-
                 elif cmd == "q":
                     print("Manual quit selected")
                     os._exit(0)
 
                 else:
-                    print("Unknown command. Use r, h, s, p, l, or q.")
+                    print("Unknown command. Use r or q.")
 
         threading.Thread(target=command_loop, daemon=True).start()
 
