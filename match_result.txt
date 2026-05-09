@@ -1,42 +1,40 @@
 ===== MATCH HISTORY =====
-1. [289] P1 hit
-2. [290] P1 hit
-3. [291] P1 hit
-4. [292] P1 hit
-5. [293] P1 hit
-6. [294] P1 hit
-7. [295] P1 hit
-8. [296] P1 hit
-9. [297] P1 hit
-10. [298] P1 hit
-11. [299] P1 hit
-12. [300] P1 hit
-13. [301] P1 hit
-14. [302] P1 hit
-15. [303] P1 hit
-16. [304] P1 hit
-17. [305] P1 hit
-18. [306] P1 hit
-19. [307] P1 hit
-20. [308] P1 hit
-21. [309] P1 hit
-22. [310] P1 hit
-23. [311] P1 hit
-24. [312] P1 hit
-25. [313] P1 hit
-26. [314] P1 hit
-27. [315] P1 hit
-28. [316] P1 hit
-29. [317] P1 hit
-30. [318] P1 hit
-31. [319] P1 hit
-32. [320] P1 hit
-33. [321] P1 hit
-34. [322] P1 hit
-35. [323] P1 hit
-36. [324] P1 hit
-37. [325] P1 hit
+1. Manual score change: P2 +1
+2. Manual score change: P2 +1
+3. Manual score change: P2 +1
+4. Manual score change: P2 -1
+5. Manual score change: P2 -1
+6. Manual score change: P2 -1
+7. Manual score change: P2 -1
+8. Manual score change: P2 +1
+9. Manual score change: P2 +1
+10. Manual score change: P2 +1
+11. Manual score change: P2 +1
+12. Manual score change: P1 -1
+13. Manual score change: P2 -1
+14. Manual score change: P2 -1
+15. Manual score change: P2 +1
+16. Manual score change: P2 +1
+17. Manual score change: P2 +1
+18. Manual score change: P2 -1
+19. Manual score change: P2 -1
+20. Manual score change: P2 -1
+21. Manual score change: P2 -1
+22. Manual score change: P2 -1
+23. Manual score change: P2 -1
+24. Manual score change: P2 -1
+25. Manual score change: P2 -1
+26. Manual score change: P2 -1
+27. Manual score change: P2 -1
+28. Manual score change: P2 -1
+29. Manual score change: P2 +1
+30. Manual score change: P2 +1
+31. Manual score change: P2 +1
+32. Manual score change: P2 +1
+33. Manual score change: P2 +1
+34. Manual score change: P2 -1
+35. Manual score change: P2 -1
+36. Manual score change: P2 -1
 ========================
-Final Score: 15 - 0
-Winner: Player 1
+Final Score: 0 - 2
 ========================

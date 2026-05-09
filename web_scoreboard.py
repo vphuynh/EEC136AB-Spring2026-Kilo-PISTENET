@@ -24,11 +24,6 @@ class WebScoreboard:
             self.scoreboard.reset_match()
             return jsonify({"status": "reset complete"})
 
-        @self.app.route("/save", methods=["POST"])
-        def save():
-            self.scoreboard.save_match_history()
-            return jsonify({"status": "match saved"})
-
         @self.app.route("/mode/pool", methods=["POST"])
         def set_pool():
             self.scoreboard.set_mode("pool")
@@ -38,7 +33,7 @@ class WebScoreboard:
         def set_de():
             self.scoreboard.set_mode("de")
             return jsonify({"status": "de mode selected"})
-        
+
         @self.app.route("/score/p1/add", methods=["POST"])
         def score_p1_add():
             self.scoreboard.manual_score("P1", 1)
@@ -58,6 +53,36 @@ class WebScoreboard:
         def score_p2_sub():
             self.scoreboard.manual_score("P2", -1)
             return jsonify({"status": "P2 score removed"})
+
+        @self.app.route("/timer/start", methods=["POST"])
+        def timer_start():
+            self.scoreboard.start_timer()
+            return jsonify({"status": "timer started"})
+
+        @self.app.route("/timer/pause", methods=["POST"])
+        def timer_pause():
+            self.scoreboard.pause_timer()
+            return jsonify({"status": "timer paused"})
+
+        @self.app.route("/timer/reset", methods=["POST"])
+        def timer_reset():
+            self.scoreboard.reset_timer()
+            return jsonify({"status": "timer reset"})
+
+        @self.app.route("/weapon/epee", methods=["POST"])
+        def weapon_epee():
+            self.scoreboard.set_weapon("epee")
+            return jsonify({"status": "epee selected"})
+
+        @self.app.route("/weapon/foil", methods=["POST"])
+        def weapon_foil():
+            self.scoreboard.set_weapon("foil")
+            return jsonify({"status": "foil selected"})
+
+        @self.app.route("/weapon/saber", methods=["POST"])
+        def weapon_saber():
+            self.scoreboard.set_weapon("saber")
+            return jsonify({"status": "saber selected"})
 
     def start(self):
         thread = threading.Thread(target=self.run_server, daemon=True)
@@ -79,216 +104,486 @@ PAGE_HTML = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Fencing Scoreboard</title>
+    <title>PisteNet Scoreboard</title>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
+            margin: 0;
+            min-height: 100vh;
             font-family: Arial, sans-serif;
-            background: #111;
             color: white;
+            background:
+                linear-gradient(90deg, rgba(0, 255, 150, 0.12), transparent 30%, transparent 70%, rgba(255, 70, 90, 0.14)),
+                radial-gradient(circle at top, #1f2937 0%, #0b0f17 45%, #020305 100%);
+            overflow-x: hidden;
+        }
+
+        .arena-line {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.35), transparent);
+            opacity: 0.4;
+            z-index: 0;
+        }
+
+        .page {
+            position: relative;
+            z-index: 1;
+            padding: 28px;
+        }
+
+        .title {
             text-align: center;
-            padding-top: 30px;
+            margin-bottom: 28px;
         }
 
-        h1 {
-            font-size: 44px;
-            margin-bottom: 8px;
+        .title h1 {
+            margin: 0;
+            font-size: 52px;
+            letter-spacing: 8px;
+            font-weight: 900;
         }
 
-        .mode {
-            color: #00d9ff;
-            font-size: 22px;
-            margin-bottom: 20px;
+        .title .brand {
+            color: #facc15;
+            letter-spacing: 4px;
+            font-size: 15px;
+            margin-top: 8px;
         }
 
-        .status-row {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin-bottom: 25px;
+        .bout-info {
+            color: #cbd5e1;
+            margin-top: 10px;
+            font-size: 17px;
         }
 
-        .status-box {
-            background: #222;
-            border-radius: 12px;
-            padding: 12px 24px;
-            font-size: 18px;
+        .main-scoreboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 300px 1fr;
+            gap: 24px;
+            align-items: stretch;
         }
 
-        .connected {
-            color: #00ff88;
-        }
-
-        .disconnected {
-            color: #ff5555;
-        }
-
-        .scoreboard {
-            display: flex;
-            justify-content: center;
-            gap: 60px;
-            margin-bottom: 25px;
-        }
-
-        .player {
-            background: #222;
-            border-radius: 20px;
-            padding: 30px;
-            width: 240px;
-            box-shadow: 0 0 20px #000;
+        .fighter-card {
+            min-height: 390px;
+            border-radius: 34px;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 35px 100px rgba(0,0,0,0.55);
             transition: 0.2s;
         }
 
-        .player h2 {
-            font-size: 30px;
+        .fighter-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.20), transparent 42%);
+            pointer-events: none;
+        }
+
+        .fighter-card::after {
+            content: "";
+            position: absolute;
+            bottom: 24px;
+            left: 28px;
+            right: 28px;
+            height: 3px;
+            border-radius: 99px;
+            opacity: 0.7;
+        }
+
+        .left-card {
+            background: linear-gradient(145deg, #064e3b, #07111d 65%);
+            border: 1px solid rgba(52, 255, 170, 0.35);
+        }
+
+        .left-card::after {
+            background: #34ffaa;
+            box-shadow: 0 0 22px #34ffaa;
+        }
+
+        .right-card {
+            background: linear-gradient(145deg, #5f111b, #07111d 65%);
+            border: 1px solid rgba(255, 80, 105, 0.4);
+        }
+
+        .right-card::after {
+            background: #ff5069;
+            box-shadow: 0 0 22px #ff5069;
+        }
+
+        .fighter-label {
+            position: relative;
+            z-index: 1;
+            font-size: 18px;
+            color: #cbd5e1;
+            letter-spacing: 4px;
+            margin-bottom: 12px;
+        }
+
+        .fighter-name {
+            position: relative;
+            z-index: 1;
+            font-size: 34px;
+            font-weight: 900;
+            letter-spacing: 2px;
+        }
+
+        .left-color {
+            color: #34ffaa;
+            text-shadow: 0 0 20px rgba(52,255,170,0.45);
+        }
+
+        .right-color {
+            color: #ff5069;
+            text-shadow: 0 0 20px rgba(255,80,105,0.45);
         }
 
         .score {
-            font-size: 95px;
-            font-weight: bold;
+            position: relative;
+            z-index: 1;
+            font-size: 170px;
+            font-weight: 900;
+            line-height: 1;
+            margin-top: 44px;
         }
 
-        .p1 {
-            color: #00ff88;
+        .center-console {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 34px;
+            padding: 24px;
+            box-shadow: 0 35px 100px rgba(0,0,0,0.45);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            backdrop-filter: blur(10px);
         }
 
-        .p2 {
-            color: #ff5555;
+        .timer-label {
+            color: #94a3b8;
+            font-size: 13px;
+            letter-spacing: 3px;
+            margin-bottom: 8px;
         }
 
-        .flash-p1 {
-            box-shadow: 0 0 35px #00ff88;
-            transform: scale(1.04);
+        .timer-time {
+            font-size: 72px;
+            font-weight: 900;
+            color: #facc15;
+            text-shadow: 0 0 28px rgba(250, 204, 21, 0.5);
         }
 
-        .flash-p2 {
-            box-shadow: 0 0 35px #ff5555;
-            transform: scale(1.04);
+        .timer-state {
+            margin-top: 6px;
+            font-size: 18px;
+            color: #e5e7eb;
+        }
+
+        .phrase {
+            margin-top: 22px;
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: 5px;
+            color: #ffffff;
         }
 
         .last-hit {
-            font-size: 24px;
-            color: yellow;
-            margin-top: 10px;
+            margin-top: 18px;
+            color: #facc15;
+            font-size: 15px;
+            line-height: 1.4;
+        }
+
+        .status-row {
+            max-width: 1200px;
+            margin: 20px auto 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .status-pill {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 18px;
+            padding: 14px 18px;
+            color: #cbd5e1;
+        }
+
+        .connected {
+            color: #34ffaa;
+            font-weight: bold;
+            text-shadow: 0 0 14px rgba(52,255,170,0.7);
+        }
+
+        .disconnected {
+            color: #ff5069;
+            font-weight: bold;
+            text-shadow: 0 0 14px rgba(255,80,105,0.7);
+        }
+
+        .lower-grid {
+            max-width: 1200px;
+            margin: 24px auto 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .panel {
+            background: rgba(255,255,255,0.065);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 26px;
+            padding: 20px;
+            box-shadow: 0 25px 70px rgba(0,0,0,0.35);
+            backdrop-filter: blur(10px);
+        }
+
+        .panel-title {
+            color: #38bdf8;
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            margin-bottom: 12px;
+        }
+
+        .control-section {
             margin-bottom: 18px;
         }
 
-        .controls {
-            margin: 20px auto;
+        .section-label {
+            font-size: 12px;
+            color: #94a3b8;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
         }
 
         button {
-            background: #222;
+            background: rgba(255,255,255,0.075);
             color: white;
-            border: 1px solid #555;
-            border-radius: 10px;
-            padding: 12px 20px;
-            margin: 5px;
-            font-size: 16px;
+            border: 1px solid rgba(255,255,255,0.16);
+            border-radius: 14px;
+            padding: 12px 8px;
+            font-size: 14px;
             cursor: pointer;
+            transition: 0.15s;
         }
 
         button:hover {
-            background: #333;
+            background: rgba(56,189,248,0.22);
+            border-color: rgba(56,189,248,0.7);
+            transform: translateY(-1px);
+        }
+
+        .good:hover {
+            background: rgba(52,255,170,0.18);
+            border-color: rgba(52,255,170,0.7);
+        }
+
+        .danger:hover {
+            background: rgba(255,80,105,0.22);
+            border-color: rgba(255,80,105,0.75);
         }
 
         .stats {
-            margin-top: 20px;
-            color: #ccc;
-            font-size: 18px;
-            line-height: 1.6;
+            color: #d1d5db;
+            line-height: 1.7;
+            font-size: 15px;
         }
 
-        .event-feed {
-            background: #1b1b1b;
-            border-radius: 16px;
-            width: 520px;
-            margin: 25px auto;
-            padding: 18px;
+        .event-list, .saved-list {
+            max-height: 210px;
+            overflow-y: auto;
             text-align: left;
-            box-shadow: 0 0 20px #000;
-        }
-
-        .event-feed h2 {
-            text-align: center;
-            margin-top: 0;
-            color: #00d9ff;
         }
 
         .event-item {
-            border-bottom: 1px solid #333;
             padding: 8px 0;
-            color: #ddd;
-            font-size: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            color: #e5e7eb;
+            font-size: 14px;
         }
 
         .event-item:last-child {
             border-bottom: none;
         }
 
+        .flash-p1 {
+            box-shadow: 0 0 80px rgba(52,255,170,0.9);
+            transform: scale(1.025);
+        }
+
+        .flash-p2 {
+            box-shadow: 0 0 80px rgba(255,80,105,0.9);
+            transform: scale(1.025);
+        }
+
         .overlay {
             display: none;
-            margin-top: 30px;
-            font-size: 38px;
-            color: yellow;
-            font-weight: bold;
+            max-width: 1200px;
+            margin: 24px auto 0 auto;
+            padding: 22px;
+            border-radius: 26px;
+            font-size: 40px;
+            color: #facc15;
+            font-weight: 900;
+            background: rgba(250,204,21,0.12);
+            border: 1px solid rgba(250,204,21,0.45);
+            box-shadow: 0 0 45px rgba(250,204,21,0.25);
+            text-align: center;
+        }
+
+        @media (max-width: 950px) {
+            .main-scoreboard,
+            .lower-grid,
+            .status-row {
+                grid-template-columns: 1fr;
+            }
+
+            .score {
+                font-size: 120px;
+            }
+
+            .timer-time {
+                font-size: 60px;
+            }
+
+            .button-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
     </style>
 </head>
 
 <body>
-    <h1>FENCING SCOREBOARD</h1>
+    <div class="arena-line"></div>
 
-    <div class="mode" id="mode">Loading...</div>
-
-    <div class="status-row">
-        <div class="status-box">
-            P1 Device: <span id="p1_status" class="disconnected">not connected</span>
-        </div>
-        <div class="status-box">
-            P2 Device: <span id="p2_status" class="disconnected">not connected</span>
-        </div>
-    </div>
-
-    <div class="scoreboard">
-        <div class="player" id="p1_card">
-            <h2 class="p1">Player 1</h2>
-            <div class="score p1" id="p1_score">0</div>
+    <div class="page">
+        <div class="title">
+            <h1>PISTENET</h1>
+            <div class="brand">WIRELESS FENCING SCORE SYSTEM</div>
+            <div class="bout-info" id="mode">Loading bout info...</div>
         </div>
 
-        <div class="player" id="p2_card">
-            <h2 class="p2">Player 2</h2>
-            <div class="score p2" id="p2_score">0</div>
+        <div class="main-scoreboard">
+            <div class="fighter-card left-card" id="p1_card">
+                <div class="fighter-label">LEFT STRIP</div>
+                <div class="fighter-name left-color">PLAYER 1</div>
+                <div class="score left-color" id="p1_score">0</div>
+            </div>
+
+            <div class="center-console">
+                <div class="timer-label">BOUT CLOCK</div>
+                <div class="timer-time" id="timer_time">3:00</div>
+                <div class="timer-state" id="timer_state">Paused</div>
+                <div class="phrase" id="bout_phrase">EN GARDE</div>
+                <div class="last-hit" id="last_hit">Last Hit: None</div>
+            </div>
+
+            <div class="fighter-card right-card" id="p2_card">
+                <div class="fighter-label">RIGHT STRIP</div>
+                <div class="fighter-name right-color">PLAYER 2</div>
+                <div class="score right-color" id="p2_score">0</div>
+            </div>
         </div>
+
+        <div class="status-row">
+            <div class="status-pill">
+                P1 Device: <span id="p1_status" class="disconnected">not connected</span>
+            </div>
+
+            <div class="status-pill">
+                P2 Device: <span id="p2_status" class="disconnected">not connected</span>
+            </div>
+        </div>
+
+        <div class="lower-grid">
+            <div class="panel">
+                <div class="panel-title">CONTROL CONSOLE</div>
+
+                <div class="control-section">
+                    <div class="section-label">TIMER</div>
+                    <div class="button-grid">
+                        <button class="good" onclick="sendCommand('/timer/start')">Start</button>
+                        <button onclick="sendCommand('/timer/pause')">Pause</button>
+                        <button onclick="sendCommand('/timer/reset')">Reset Timer</button>
+                        <button class="danger" onclick="sendCommand('/reset')">Reset Match</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <div class="section-label">MATCH</div>
+                    <div class="button-grid">
+                        <button onclick="sendCommand('/mode/pool')">Pool</button>
+                        <button onclick="sendCommand('/mode/de')">DE</button>
+                        <button onclick="saveMatchToBrowser()">Save Match</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <div class="section-label">WEAPON</div>
+                    <div class="button-grid">
+                        <button onclick="sendCommand('/weapon/epee')">Epee</button>
+                        <button onclick="sendCommand('/weapon/foil')">Foil</button>
+                        <button onclick="sendCommand('/weapon/saber')">Saber</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <div class="section-label">MANUAL SCORE</div>
+                    <div class="button-grid">
+                        <button onclick="sendCommand('/score/p1/add')">P1 +1</button>
+                        <button onclick="sendCommand('/score/p1/sub')">P1 -1</button>
+                        <button onclick="sendCommand('/score/p2/add')">P2 +1</button>
+                        <button onclick="sendCommand('/score/p2/sub')">P2 -1</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">SYSTEM TELEMETRY</div>
+                <div class="stats">
+                    <div id="runtime">Runtime: 0s</div>
+                    <div id="packets">Valid Packets: 0 | Invalid Packets: 0</div>
+                    <div id="extra">Duplicates: 0 | Simultaneous Hits: 0</div>
+                    <div>BLE Receiver: Active</div>
+                    <div>Packet Parser: Enabled</div>
+                    <div>Lockout Logic: Enabled</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="lower-grid">
+            <div class="panel">
+                <div class="panel-title">LIVE EVENT FEED</div>
+                <div class="event-list" id="event_list">No events yet</div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">SAVED MATCHES</div>
+                <div class="saved-list" id="saved_matches">No saved matches yet</div>
+            </div>
+        </div>
+
+        <div class="overlay" id="winner"></div>
     </div>
-
-    <div class="last-hit" id="last_hit">Last Hit: None</div>
-
-    <div class="controls">
-        <button onclick="sendCommand('/reset')">Reset Match</button>
-        <button onclick="sendCommand('/save')">Save Match</button>
-        <button onclick="sendCommand('/mode/pool')">Pool Mode</button>
-        <button onclick="sendCommand('/mode/de')">DE Mode</button>
-        
-        <button onclick="sendCommand('/score/p1/add')">P1 +1</button>
-        <button onclick="sendCommand('/score/p1/sub')">P1 -1</button>
-
-        <button onclick="sendCommand('/score/p2/add')">P2 +1</button>
-        <button onclick="sendCommand('/score/p2/sub')">P2 -1</button>
-    </div>
-
-    <div class="stats">
-        <div id="timer">Match Time: 0s</div>
-        <div id="packets">Valid Packets: 0 | Invalid Packets: 0</div>
-        <div id="extra">Duplicates: 0 | Simultaneous Hits: 0</div>
-    </div>
-
-    <div class="event-feed">
-        <h2>Live Event Feed</h2>
-        <div id="event_list">No events yet</div>
-    </div>
-
-    <div class="overlay" id="winner"></div>
 
     <script>
         let lastP1Score = 0;
@@ -332,6 +627,56 @@ PAGE_HTML = """
             });
         }
 
+        async function saveMatchToBrowser() {
+            const response = await fetch("/data");
+            const data = await response.json();
+
+            const savedMatches = JSON.parse(localStorage.getItem("savedMatches") || "[]");
+
+            savedMatches.push({
+                saved_at: new Date().toLocaleString(),
+                mode: data.bout_type.toUpperCase(),
+                weapon: data.weapon_mode.toUpperCase(),
+                score: data.player_1_score + " - " + data.player_2_score,
+                winner: data.winner || "None",
+                timer: data.timer_display,
+                valid_packets: data.valid_packets,
+                invalid_packets: data.invalid_packets,
+                duplicate_hits: data.duplicate_hits,
+                simultaneous_hits: data.simultaneous_hits
+            });
+
+            localStorage.setItem("savedMatches", JSON.stringify(savedMatches));
+            renderSavedMatches();
+        }
+
+        function renderSavedMatches() {
+            const savedMatches = JSON.parse(localStorage.getItem("savedMatches") || "[]");
+            const container = document.getElementById("saved_matches");
+
+            if (savedMatches.length === 0) {
+                container.innerText = "No saved matches yet";
+                return;
+            }
+
+            container.innerHTML = "";
+
+            savedMatches.slice().reverse().forEach((match) => {
+                const item = document.createElement("div");
+                item.className = "event-item";
+
+                item.innerText =
+                    match.saved_at +
+                    " | " + match.mode +
+                    " | " + match.weapon +
+                    " | Score: " + match.score +
+                    " | Winner: " + match.winner +
+                    " | Timer: " + match.timer;
+
+                container.appendChild(item);
+            });
+        }
+
         async function sendCommand(route) {
             await fetch(route, { method: "POST" });
             updateScoreboard();
@@ -342,7 +687,14 @@ PAGE_HTML = """
             const data = await response.json();
 
             document.getElementById("mode").innerText =
-                "Mode: " + data.bout_type.toUpperCase() + " | First to " + data.winning_score;
+                data.bout_type.toUpperCase() +
+                " BOUT | " +
+                data.weapon_mode.toUpperCase() +
+                " | FIRST TO " +
+                data.winning_score +
+                " | LOCKOUT " +
+                data.lockout_window +
+                "s";
 
             updateStatus("p1_status", data.device_status["Fencing_P1"]);
             updateStatus("p2_status", data.device_status["Fencing_P2"]);
@@ -364,8 +716,15 @@ PAGE_HTML = """
             document.getElementById("last_hit").innerText =
                 "Last Hit: " + data.last_hit;
 
-            document.getElementById("timer").innerText =
-                "Match Time: " + data.match_time + "s";
+            document.getElementById("runtime").innerText =
+                "Runtime: " + data.match_time + "s";
+
+            document.getElementById("timer_time").innerText = data.timer_display;
+            document.getElementById("timer_state").innerText =
+                data.timer_running ? "Running" : "Paused";
+
+            document.getElementById("bout_phrase").innerText =
+                data.timer_running ? "ALLEZ" : "EN GARDE";
 
             document.getElementById("packets").innerText =
                 "Valid Packets: " + data.valid_packets + " | Invalid Packets: " + data.invalid_packets;
@@ -387,6 +746,7 @@ PAGE_HTML = """
 
         setInterval(updateScoreboard, 500);
         updateScoreboard();
+        renderSavedMatches();
     </script>
 </body>
 </html>

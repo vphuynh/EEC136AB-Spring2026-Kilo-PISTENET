@@ -1,5 +1,6 @@
 from colorama import Fore, init
 import time
+import threading
 
 init(autoreset=True)
 
@@ -38,7 +39,12 @@ class Scoreboard:
 
         self.last_hit_time = None
         self.last_hit_player = None
-        self.lockout_window = 0.5
+        self.weapon_mode = "epee"
+        self.lockout_window = 0.045
+
+        self.timer_seconds = 180
+        self.timer_running = False
+        self.timer_thread_started = False
 
     def update_score(self, parsed_packet):
 
@@ -189,6 +195,45 @@ class Scoreboard:
 
         print(Fore.CYAN + f"Match history saved to {filename}")
 
+    def start_timer(self):
+
+        self.timer_running = True
+
+        if not self.timer_thread_started:
+            self.timer_thread_started = True
+            threading.Thread(target=self.run_timer, daemon=True).start()
+
+    def pause_timer(self):
+
+        self.timer_running = False
+
+    def reset_timer(self):
+
+        self.timer_seconds = 180
+        self.timer_running = False
+
+    def run_timer(self):
+
+        while True:
+            if self.timer_running and self.timer_seconds > 0 and not self.match_over:
+                time.sleep(1)
+                self.timer_seconds -= 1
+
+                if self.timer_seconds <= 0:
+                    self.timer_seconds = 0
+                    self.timer_running = False
+                    self.event_history.append("Timer expired")
+                    self.last_hit_display = "Timer expired"
+            else:
+                time.sleep(0.2)
+
+    def get_timer_display(self):
+
+        minutes = self.timer_seconds // 60
+        seconds = self.timer_seconds % 60
+
+        return f"{minutes}:{seconds:02d}"
+
     def get_state(self):
 
         elapsed_time = round(time.time() - self.match_start_time, 1)
@@ -196,10 +241,14 @@ class Scoreboard:
         return {
             "bout_type": self.bout_type,
             "winning_score": self.winning_score,
+            "weapon_mode": self.weapon_mode,
+            "lockout_window": self.lockout_window,
             "player_1_score": self.player_1_score,
             "player_2_score": self.player_2_score,
             "last_hit": self.last_hit_display,
             "match_time": elapsed_time,
+            "timer_display": self.get_timer_display(),
+            "timer_running": self.timer_running,
             "match_over": self.match_over,
             "winner": self.winner,
             "valid_packets": self.valid_packets,
@@ -232,7 +281,28 @@ class Scoreboard:
         self.last_hit_display = event_text
 
         self.check_winner()
-        
+
+    def set_weapon(self, weapon_mode):
+
+        self.weapon_mode = weapon_mode.lower()
+
+        if self.weapon_mode == "epee":
+            self.lockout_window = 0.045
+
+        elif self.weapon_mode == "foil":
+            self.lockout_window = 0.300
+
+        elif self.weapon_mode == "saber":
+            self.lockout_window = 0.120
+
+        else:
+            self.weapon_mode = "epee"
+            self.lockout_window = 0.045
+
+        event_text = f"Weapon mode changed to {self.weapon_mode.upper()}"
+        self.event_history.append(event_text)
+        self.last_hit_display = event_text
+
     def set_mode(self, bout_type):
 
         self.bout_type = bout_type.lower()
@@ -265,5 +335,7 @@ class Scoreboard:
         self.last_hit_time = None
         self.last_hit_player = None
         self.match_start_time = time.time()
+
+        self.reset_timer()
 
         print(Fore.CYAN + "Match reset complete")
