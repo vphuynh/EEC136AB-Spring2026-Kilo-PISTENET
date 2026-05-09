@@ -19,6 +19,46 @@ class WebScoreboard:
         def data():
             return jsonify(self.scoreboard.get_state())
 
+        @self.app.route("/reset", methods=["POST"])
+        def reset():
+            self.scoreboard.reset_match()
+            return jsonify({"status": "reset complete"})
+
+        @self.app.route("/save", methods=["POST"])
+        def save():
+            self.scoreboard.save_match_history()
+            return jsonify({"status": "match saved"})
+
+        @self.app.route("/mode/pool", methods=["POST"])
+        def set_pool():
+            self.scoreboard.set_mode("pool")
+            return jsonify({"status": "pool mode selected"})
+
+        @self.app.route("/mode/de", methods=["POST"])
+        def set_de():
+            self.scoreboard.set_mode("de")
+            return jsonify({"status": "de mode selected"})
+        
+        @self.app.route("/score/p1/add", methods=["POST"])
+        def score_p1_add():
+            self.scoreboard.manual_score("P1", 1)
+            return jsonify({"status": "P1 score added"})
+
+        @self.app.route("/score/p2/add", methods=["POST"])
+        def score_p2_add():
+            self.scoreboard.manual_score("P2", 1)
+            return jsonify({"status": "P2 score added"})
+
+        @self.app.route("/score/p1/sub", methods=["POST"])
+        def score_p1_sub():
+            self.scoreboard.manual_score("P1", -1)
+            return jsonify({"status": "P1 score removed"})
+
+        @self.app.route("/score/p2/sub", methods=["POST"])
+        def score_p2_sub():
+            self.scoreboard.manual_score("P2", -1)
+            return jsonify({"status": "P2 score removed"})
+
     def start(self):
         thread = threading.Thread(target=self.run_server, daemon=True)
         thread.start()
@@ -133,6 +173,25 @@ PAGE_HTML = """
             margin-bottom: 18px;
         }
 
+        .controls {
+            margin: 20px auto;
+        }
+
+        button {
+            background: #222;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 10px;
+            padding: 12px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #333;
+        }
+
         .stats {
             margin-top: 20px;
             color: #ccc;
@@ -205,6 +264,19 @@ PAGE_HTML = """
 
     <div class="last-hit" id="last_hit">Last Hit: None</div>
 
+    <div class="controls">
+        <button onclick="sendCommand('/reset')">Reset Match</button>
+        <button onclick="sendCommand('/save')">Save Match</button>
+        <button onclick="sendCommand('/mode/pool')">Pool Mode</button>
+        <button onclick="sendCommand('/mode/de')">DE Mode</button>
+        
+        <button onclick="sendCommand('/score/p1/add')">P1 +1</button>
+        <button onclick="sendCommand('/score/p1/sub')">P1 -1</button>
+
+        <button onclick="sendCommand('/score/p2/add')">P2 +1</button>
+        <button onclick="sendCommand('/score/p2/sub')">P2 -1</button>
+    </div>
+
     <div class="stats">
         <div id="timer">Match Time: 0s</div>
         <div id="packets">Valid Packets: 0 | Invalid Packets: 0</div>
@@ -258,6 +330,11 @@ PAGE_HTML = """
                 item.innerText = eventText;
                 eventList.appendChild(item);
             });
+        }
+
+        async function sendCommand(route) {
+            await fetch(route, { method: "POST" });
+            updateScoreboard();
         }
 
         async function updateScoreboard() {

@@ -210,6 +210,41 @@ class Scoreboard:
             "device_status": self.device_status
         }
 
+    def manual_score(self, player_id, amount):
+
+        if player_id == "P1":
+            self.player_1_score += amount
+
+            if self.player_1_score < 0:
+                self.player_1_score = 0
+
+        elif player_id == "P2":
+            self.player_2_score += amount
+
+            if self.player_2_score < 0:
+                self.player_2_score = 0
+
+        else:
+            return
+
+        event_text = f"Manual score change: {player_id} {amount:+d}"
+        self.event_history.append(event_text)
+        self.last_hit_display = event_text
+
+        self.check_winner()
+        
+    def set_mode(self, bout_type):
+
+        self.bout_type = bout_type.lower()
+
+        if self.bout_type == "de":
+            self.winning_score = 15
+        else:
+            self.bout_type = "pool"
+            self.winning_score = 5
+
+        self.reset_match()
+
     def reset_match(self):
 
         self.player_1_score = 0
