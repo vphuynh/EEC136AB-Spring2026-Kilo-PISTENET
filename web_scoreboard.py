@@ -84,6 +84,23 @@ class WebScoreboard:
             self.scoreboard.set_weapon("saber")
             return jsonify({"status": "saber selected"})
         
+        @self.app.route("/preset/pool", methods=["POST"])
+        def preset_pool():
+            self.scoreboard.set_bout_preset("pool")
+            return jsonify({"status": "pool preset selected"})
+
+
+        @self.app.route("/preset/de", methods=["POST"])
+        def preset_de():
+            self.scoreboard.set_bout_preset("de")
+            return jsonify({"status": "de preset selected"})
+
+
+        @self.app.route("/preset/practice", methods=["POST"])
+        def preset_practice():
+            self.scoreboard.set_bout_preset("practice")
+            return jsonify({"status": "practice preset selected"})
+        
         @self.app.route("/card/p1/yellow", methods=["POST"])
         def card_p1_yellow():
             self.scoreboard.add_card("P1", "yellow")
@@ -685,6 +702,7 @@ PAGE_HTML = """
         <div class="lower-grid">
             <div class="panel">
                 <div class="panel-title">CONTROL CONSOLE</div>
+                <div class="section-label">Shortcuts: Space start/pause | R reset | 1/P1 | 2/P2 | S save</div>
 
                 <div class="control-section">
                     <div class="section-label">TIMER</div>
@@ -699,9 +717,9 @@ PAGE_HTML = """
                 <div class="control-section">
                     <div class="section-label">MATCH</div>
                     <div class="button-grid">
-                        <button onclick="sendCommand('/mode/pool')">Pool</button>
-                        <button onclick="sendCommand('/mode/de')">DE</button>
-                        <button onclick="saveMatchToBrowser()">Save Match</button>
+                        <button onclick="sendCommand('/preset/pool')">Pool Bout</button>
+                        <button onclick="sendCommand('/preset/de')">DE Bout</button>
+                        <button onclick="sendCommand('/preset/practice')">Practice</button>
                     </div>
                 </div>
 
@@ -744,6 +762,7 @@ PAGE_HTML = """
                     <div id="runtime">Runtime: 0s</div>
                     <div id="packets">Valid Packets: 0 | Invalid Packets: 0</div>
                     <div id="extra">Duplicates: 0 | Simultaneous Hits: 0</div>
+                    <div id="packet_age">Last Packet: None</div>
                     <div>BLE Receiver: Active</div>
                     <div>Packet Parser: Enabled</div>
                     <div>Lockout Logic: Enabled</div>
@@ -760,6 +779,7 @@ PAGE_HTML = """
             <div class="panel">
                 <div class="panel-title">SAVED MATCHES</div>
                 <button class="small-clear-btn" onclick="clearSavedMatches()">Clear Saved</button>
+                <button class="small-clear-btn" onclick="exportSavedMatches()">Export Saved</button>
                 <div class="saved-list" id="saved_matches">No saved matches yet</div>
             </div>
         </div>
@@ -905,6 +925,7 @@ PAGE_HTML = """
 
             savedMatches.push({
                 saved_at: new Date().toLocaleString(),
+                match_number: data.match_number,
                 mode: data.bout_type.toUpperCase(),
                 weapon: data.weapon_mode.toUpperCase(),
                 score: data.player_1_score + " - " + data.player_2_score,
@@ -936,7 +957,8 @@ PAGE_HTML = """
                 item.className = "event-item";
 
                 item.innerText =
-                    match.saved_at +
+                    "Match " + match.match_number +
+                    " | " + match.saved_at +
                     " | " + match.mode +
                     " | " + match.weapon +
                     " | Score: " + match.score +
@@ -952,7 +974,16 @@ PAGE_HTML = """
             renderSavedMatches();
         }
 
+        function exportSavedMatches() {
+            const savedMatches = localStorage.getItem("savedMatches") || "[]";
+            const blob = new Blob([savedMatches], { type: "application/json" });
 
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "saved_matches.json";
+            link.click();
+        }
+        
         async function sendCommand(route) {
             await fetch(route, { method: "POST" });
             updateScoreboard();
@@ -964,6 +995,54 @@ PAGE_HTML = """
             document.getElementById("bout_phrase").innerText = phrase;
 
             updateScoreboard();
+        }
+
+        function setupKeyboardShortcuts() {
+
+            document.addEventListener("keydown", function(event) {
+
+                const key = event.key.toLowerCase();
+
+                if (key === " ") {
+                    event.preventDefault();
+
+                    const timerState = document.getElementById("timer_state").innerText;
+
+                    if (timerState === "Running") {
+                        sendTimerCommand("/timer/pause", "HALT");
+                    } else {
+                        sendTimerCommand("/timer/start", "ALLEZ");
+                    }
+                }
+
+                else if (key === "r") {
+                    sendCommand("/reset");
+                }
+
+                else if (key === "1") {
+                    sendCommand("/score/p1/add");
+                }
+
+                else if (key === "2") {
+                    sendCommand("/score/p2/add");
+                }
+
+                else if (key === "s") {
+                    saveMatchToBrowser();
+                }
+
+                else if (key === "e") {
+                    sendCommand("/weapon/epee");
+                }
+
+                else if (key === "f") {
+                    sendCommand("/weapon/foil");
+                }
+
+                else if (key === "b") {
+                    sendCommand("/weapon/saber");
+                }
+            });
         }
 
         async function updateScoreboard() {
@@ -1063,6 +1142,13 @@ PAGE_HTML = """
             document.getElementById("extra").innerText =
                 "Duplicates: " + data.duplicate_hits + " | Simultaneous Hits: " + data.simultaneous_hits;
 
+            if (data.last_packet_age === "None") {
+                document.getElementById("packet_age").innerText = "Last Packet: None";
+            } else {
+                document.getElementById("packet_age").innerText =
+                    "Last Packet: " + data.last_packet_age + "s ago";
+            }
+
             updateEventFeed(data.event_history);
 
             if (data.match_over) {
@@ -1083,6 +1169,7 @@ PAGE_HTML = """
         setInterval(updateScoreboard, 500);
         updateScoreboard();
         renderSavedMatches();
+        setupKeyboardShortcuts();
     </script>
 </body>
 </html>

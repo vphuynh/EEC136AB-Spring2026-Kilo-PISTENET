@@ -24,10 +24,12 @@ class Scoreboard:
         self.match_over = False
         self.winner = None
         self.match_start_time = time.time()
+        self.match_number = 1
 
         self.counted_hits = set()
         self.event_history = []
         self.last_hit_display = "None"
+        self.last_packet_received_time = None
 
         self.valid_packets = 0
         self.invalid_packets = 0
@@ -45,6 +47,7 @@ class Scoreboard:
         self.lockout_window = 0.045
 
         self.timer_seconds = 180
+        self.timer_start_seconds = 180
         self.timer_running = False
         self.timer_thread_started = False
 
@@ -57,6 +60,13 @@ class Scoreboard:
         if len(self.event_history) > 200:
             self.event_history.pop(0)
 
+    def add_system_event(self, event_text):
+
+        with self.lock:
+
+            self.add_event("[SYSTEM] " + event_text)
+            self.last_hit_display = event_text
+
     def update_score(self, parsed_packet):
 
         with self.lock:
@@ -67,6 +77,7 @@ class Scoreboard:
                 return
 
             self.valid_packets += 1
+            self.last_packet_received_time = time.time()
 
             player_id = parsed_packet["player_id"]
             hit_type = parsed_packet["hit_type"]
@@ -220,7 +231,7 @@ class Scoreboard:
     def reset_timer(self):
 
         with self.lock:
-            self.timer_seconds = 180
+            self.timer_seconds = self.timer_start_seconds
             self.timer_running = False
 
     def run_timer(self):
@@ -260,8 +271,14 @@ class Scoreboard:
                 elif self.player_2_score == self.winning_score - 1:
                     match_point = "Player 2"
 
+            if self.last_packet_received_time is None:
+                last_packet_age = "None"
+            else:
+                last_packet_age = round(time.time() - self.last_packet_received_time, 1)
+
             return {
                 "bout_type": self.bout_type,
+                "match_number": self.match_number,
                 "winning_score": self.winning_score,
                 "weapon_mode": self.weapon_mode,
                 "lockout_window": self.lockout_window,
@@ -270,6 +287,7 @@ class Scoreboard:
                 "player_1_cards": list(self.player_1_cards),
                 "player_2_cards": list(self.player_2_cards),
                 "last_hit": self.last_hit_display,
+                "last_packet_age": last_packet_age,
                 "match_time": elapsed_time,
                 "timer_display": self.get_timer_display(),
                 "timer_seconds": self.timer_seconds,
@@ -360,6 +378,36 @@ class Scoreboard:
 
             self.check_winner()
 
+    def set_bout_preset(self, preset):
+
+        with self.lock:
+
+            preset = preset.lower()
+
+            if preset == "pool":
+
+                self.bout_type = "pool"
+                self.winning_score = 5
+                self.timer_start_seconds = 180
+
+            elif preset == "de":
+
+                self.bout_type = "de"
+                self.winning_score = 15
+                self.timer_start_seconds = 180
+
+            elif preset == "practice":
+
+                self.bout_type = "practice"
+                self.winning_score = 99
+                self.timer_start_seconds = 60
+
+            else:
+                return
+
+        self.reset_match()
+
+
     def set_weapon(self, weapon_mode):
 
         with self.lock:
@@ -398,6 +446,7 @@ class Scoreboard:
     def reset_match(self):
 
         with self.lock:
+            self.match_number += 1
             self.player_1_score = 0
             self.player_2_score = 0
 
@@ -420,7 +469,7 @@ class Scoreboard:
             self.last_hit_player = None
             self.match_start_time = time.time()
 
-            self.timer_seconds = 180
+            self.timer_seconds = self.timer_start_seconds
             self.timer_running = False
 
             print(Fore.CYAN + "Match reset complete")

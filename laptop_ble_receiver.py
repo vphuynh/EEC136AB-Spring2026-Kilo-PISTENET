@@ -1,7 +1,6 @@
 # laptop_ble_receiver.py
 
 from collections import deque
-from mock_ble_device import MockBLEDevice
 from real_ble_device import RealBLEDevice
 from parser import parse_data, print_parsed
 from scoreboard import Scoreboard
@@ -10,8 +9,7 @@ from web_scoreboard import WebScoreboard
 
 class LaptopBLEReceiver:
 
-    def __init__(self, mode="mock"):
-        self.mode = mode
+    def __init__(self):
         self.packet_queue = deque(maxlen=50)
         self.packet_count = 0
 
@@ -25,19 +23,25 @@ class LaptopBLEReceiver:
 
         self.web_scoreboard = WebScoreboard(self.scoreboard)
 
-        if self.mode == "real":
-            self.device = RealBLEDevice()
-            self.device.set_status_callback(self.update_device_status)
-        else:
-            self.mode = "mock"
-            self.device = MockBLEDevice()
+        self.device = RealBLEDevice()
+        self.device.set_status_callback(self.update_device_status)
 
     def update_device_status(self, device_name, status):
+
         if device_name not in self.device_status:
             return
+
+        old_status = self.device_status[device_name]
+
         self.device_status[device_name] = status
         self.scoreboard.device_status = self.device_status
+
         print(f"[STATUS] {device_name}: {status}")
+
+        if old_status != status:
+            self.scoreboard.add_system_event(
+                f"{device_name} changed from {old_status} to {status}"
+            )
 
     def handle_notification(self, sender, raw_bytes):
 
@@ -50,7 +54,7 @@ class LaptopBLEReceiver:
 
         try:
             data = raw_bytes.decode("utf-8", errors="replace").strip()
-        except:
+        except UnicodeDecodeError:
             print("Decode error - packet ignored")
             return
 
@@ -86,15 +90,14 @@ class LaptopBLEReceiver:
     def start(self):
 
         self.web_scoreboard.start()
-        print("Web scoreboard running at: http://127.0.0.1:5000")
 
-        print("Receiver ready for incoming BLE data")
-        print("Current mode:", self.mode)
-        print(f"Scoreboard mode: {self.scoreboard.bout_type} bout, first to {self.scoreboard.winning_score}")
-
-        print("\nCommands:")
-        print("r = reset match")
-        print("q = quit program\n")
+        print("\n==============================")
+        print("   PISTENET BLE RECEIVER")
+        print("==============================")
+        print("Web scoreboard: http://127.0.0.1:5000")
+        print(f"Scoreboard: {self.scoreboard.bout_type.upper()} bout, first to {self.scoreboard.winning_score}")
+        print("Commands: r = reset match, q = quit")
+        print("==============================\n")
 
         import threading
         import os
@@ -104,6 +107,7 @@ class LaptopBLEReceiver:
                 cmd = input().strip().lower()
 
                 if cmd == "r":
+                    self.packet_count = 0
                     self.scoreboard.reset_match()
                     print("\n--- Match Reset ---\n")
 
