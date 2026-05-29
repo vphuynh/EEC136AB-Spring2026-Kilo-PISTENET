@@ -420,7 +420,7 @@ class Scoreboard:
                 self.lockout_window = 0.300
 
             elif self.weapon_mode == "saber":
-                self.lockout_window = 0.120
+                self.lockout_window = 0.170
 
             else:
                 self.weapon_mode = "epee"

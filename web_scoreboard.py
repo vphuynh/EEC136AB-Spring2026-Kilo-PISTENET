@@ -14,10 +14,29 @@ class WebScoreboard:
         @self.app.route("/")
         def home():
             return render_template_string(PAGE_HTML)
-
+        
+        @self.app.route("/repeater")
+        def repeater():
+            return render_template_string(REPEATER_HTML)
+        
         @self.app.route("/data")
         def data():
             return jsonify(self.scoreboard.get_state())
+        
+        @self.app.route("/repeater-data")
+        def repeater_data():
+            state = self.scoreboard.get_state()
+
+            return jsonify({
+                "p1": state["player_1_score"],
+                "p2": state["player_2_score"],
+                "timer": state["timer_display"],
+                "weapon": state["weapon_mode"],
+                "bout": state["bout_type"],
+                "last": state["last_hit"],
+                "match_over": state["match_over"],
+                "winner": state["winner"]
+            })
 
         @self.app.route("/reset", methods=["POST"])
         def reset():
@@ -316,6 +335,26 @@ PAGE_HTML = """
             backdrop-filter: blur(10px);
         }
 
+        .center-ready {
+            border-color: rgba(56,189,248,0.75);
+            box-shadow: 0 0 45px rgba(56,189,248,0.28);
+        }
+
+        .center-active {
+            border-color: rgba(52,255,170,0.85);
+            box-shadow: 0 0 55px rgba(52,255,170,0.35);
+        }
+
+        .center-halt {
+            border-color: rgba(255,80,105,0.85);
+            box-shadow: 0 0 55px rgba(255,80,105,0.35);
+        }
+
+        .center-victory {
+            border-color: rgba(250,204,21,0.9);
+            box-shadow: 0 0 65px rgba(250,204,21,0.45);
+        }
+
         .timer-label {
             color: #94a3b8;
             font-size: 13px;
@@ -569,6 +608,46 @@ PAGE_HTML = """
             min-height: 44px;
         }
 
+        body.showcase-mode .lower-grid {
+                    display: none;
+                }
+
+                body.showcase-mode .status-row {
+                    max-width: 1200px;
+                    margin-top: 28px;
+                }
+
+                body.showcase-mode .main-scoreboard {
+                    max-width: 1350px;
+                    grid-template-columns: 1fr 340px 1fr;
+                }
+
+                body.showcase-mode .fighter-card {
+                    min-height: 500px;
+                }
+
+                body.showcase-mode .score {
+                    font-size: 220px;
+                }
+
+                body.showcase-mode .timer-time {
+                    font-size: 92px;
+                }
+
+        .showcase-btn {
+            position: fixed;
+            top: 122px;
+            right: 18px;
+            z-index: 1000;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            font-size: 18px;
+            padding: 0;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.18);
+        }   
+
         @media (max-width: 950px) {
             .main-scoreboard,
             .lower-grid,
@@ -645,7 +724,7 @@ PAGE_HTML = """
             font-size: 12px;
             border-radius: 10px;
             color: #cbd5e1;
-        }            
+        }      
 
         }
     </style>
@@ -655,6 +734,7 @@ PAGE_HTML = """
     <div class="arena-line"></div>
     <button class="fullscreen-btn" onclick="toggleFullscreen()">⛶</button>
     <button class="sound-btn" id="sound_btn" onclick="toggleSound()">🔊</button>
+        <button class="showcase-btn" id="showcase_btn" onclick="toggleShowcaseMode()">🎬</button>
     <div id="screen_flash" class="screen-flash"></div>
 
     <div class="page">
@@ -672,7 +752,7 @@ PAGE_HTML = """
                 <div class="card-display" id="p1_cards"></div>
             </div>
 
-            <div class="center-console">
+            <div class="center-console center-ready" id="center_console">
                 <div class="timer-label">BOUT CLOCK</div>
                 <div class="timer-time" id="timer_time">3:00</div>
                 <div class="timer-state" id="timer_state">Paused</div>
@@ -887,6 +967,17 @@ PAGE_HTML = """
             }
         }
 
+         function toggleShowcaseMode() {
+            document.body.classList.toggle("showcase-mode");
+
+            const button = document.getElementById("showcase_btn");
+
+            if (document.body.classList.contains("showcase-mode")) {
+                button.innerText = "🧪";
+            } else {
+                button.innerText = "🎬";
+            }
+        }       
 
         function updateStatus(elementId, status) {
             const element = document.getElementById(elementId);
@@ -1049,6 +1140,32 @@ PAGE_HTML = """
             const response = await fetch("/data");
             const data = await response.json();
 
+            const centerConsole = document.getElementById("center_console");
+
+            centerConsole.classList.remove(
+                "center-ready",
+                "center-active",
+                "center-halt",
+                "center-victory"
+            );
+
+            if (data.match_over) {
+                centerConsole.classList.add("center-victory");
+            }
+            else if (data.timer_running) {
+                centerConsole.classList.add("center-active");
+            }
+            else if (
+                data.player_1_score === 0 &&
+                data.player_2_score === 0 &&
+                data.timer_display === "3:00"
+            ) {
+                centerConsole.classList.add("center-ready");
+            }
+            else {
+                centerConsole.classList.add("center-halt");
+            }
+
             document.getElementById("mode").innerText =
                 data.bout_type.toUpperCase() +
                 " BOUT | " +
@@ -1170,6 +1287,196 @@ PAGE_HTML = """
         updateScoreboard();
         renderSavedMatches();
         setupKeyboardShortcuts();
+    </script>
+</body>
+</html>
+"""
+REPEATER_HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PisteNet Repeater</title>
+
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: radial-gradient(circle at top, #1f2937 0%, #020617 65%);
+            color: white;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        .screen {
+            height: 100vh;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            padding: 30px;
+        }
+
+        .top {
+            text-align: center;
+        }
+
+        .title {
+            font-size: 52px;
+            font-weight: 900;
+            letter-spacing: 8px;
+        }
+
+        .mode {
+            margin-top: 10px;
+            color: #cbd5e1;
+            font-size: 22px;
+            letter-spacing: 3px;
+        }
+
+        .score-row {
+            display: grid;
+            grid-template-columns: 1fr 220px 1fr;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .player {
+            text-align: center;
+            border-radius: 34px;
+            padding: 30px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.14);
+        }
+
+        .p1 {
+            box-shadow: 0 0 60px rgba(52,255,170,0.22);
+        }
+
+        .p2 {
+            box-shadow: 0 0 60px rgba(255,80,105,0.22);
+        }
+
+        .label {
+            font-size: 30px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: #cbd5e1;
+        }
+
+        .score {
+            font-size: 230px;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .p1-score {
+            color: #34ffaa;
+            text-shadow: 0 0 28px rgba(52,255,170,0.65);
+        }
+
+        .p2-score {
+            color: #ff5069;
+            text-shadow: 0 0 28px rgba(255,80,105,0.65);
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .timer {
+            font-size: 70px;
+            font-weight: 900;
+            color: #facc15;
+            text-shadow: 0 0 24px rgba(250,204,21,0.5);
+        }
+
+        .phrase {
+            margin-top: 18px;
+            font-size: 34px;
+            font-weight: 900;
+            letter-spacing: 5px;
+        }
+
+        .last {
+            text-align: center;
+            font-size: 30px;
+            color: #e5e7eb;
+            padding: 18px;
+            border-radius: 22px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .winner {
+            color: #facc15;
+            font-weight: 900;
+            text-shadow: 0 0 30px rgba(250,204,21,0.8);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="screen">
+        <div class="top">
+            <div class="title">PISTENET</div>
+            <div class="mode" id="mode">Loading...</div>
+        </div>
+
+        <div class="score-row">
+            <div class="player p1">
+                <div class="label">PLAYER 1</div>
+                <div class="score p1-score" id="p1_score">0</div>
+            </div>
+
+            <div class="center">
+                <div class="timer" id="timer">3:00</div>
+                <div class="phrase" id="phrase">EN GARDE</div>
+            </div>
+
+            <div class="player p2">
+                <div class="label">PLAYER 2</div>
+                <div class="score p2-score" id="p2_score">0</div>
+            </div>
+        </div>
+
+        <div class="last" id="last_event">Last Event: None</div>
+    </div>
+
+    <script>
+        async function updateRepeater() {
+            const response = await fetch("/data");
+            const data = await response.json();
+
+            document.getElementById("mode").innerText =
+                data.bout_type.toUpperCase() +
+                " | " +
+                data.weapon_mode.toUpperCase() +
+                " | FIRST TO " +
+                data.winning_score;
+
+            document.getElementById("p1_score").innerText = data.player_1_score;
+            document.getElementById("p2_score").innerText = data.player_2_score;
+            document.getElementById("timer").innerText = data.timer_display;
+
+            if (data.match_over) {
+                document.getElementById("phrase").innerText = "VICTORY";
+                document.getElementById("last_event").className = "last winner";
+                document.getElementById("last_event").innerText =
+                    "Winner: " + data.winner;
+            } else {
+                document.getElementById("last_event").className = "last";
+
+                if (data.timer_running) {
+                    document.getElementById("phrase").innerText = "ALLEZ";
+                } else {
+                    document.getElementById("phrase").innerText = "HALT";
+                }
+
+                document.getElementById("last_event").innerText =
+                    "Last Event: " + data.last_hit;
+            }
+        }
+
+        setInterval(updateRepeater, 500);
+        updateRepeater();
     </script>
 </body>
 </html>
