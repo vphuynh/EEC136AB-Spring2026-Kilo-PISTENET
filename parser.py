@@ -27,8 +27,7 @@ def parse_data(data):
     if player_id not in ["P1", "P2"]:
         return None
 
-    # only accept hit events for now
-    if hit_type != "hit":
+    if hit_type not in ["hit", "offtarget"]:
         return None
 
     # make sure timestamp / hit id exists

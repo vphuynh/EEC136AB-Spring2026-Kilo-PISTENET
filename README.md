@@ -16,3 +16,15 @@ r = reset match
 q = quit program
 
 for web scoreboard: open http://127.0.0.1:5000, after running python3 main.py
+for repeater display: open http://127.0.0.1:5000/repeater
+
+Keyboard Shortcuts:
+
+Space = Start / Pause Timer
+R = Reset Match
+1 = Add Point to P1
+2 = Add Point to P2
+S = Save Match
+E = Epee Mode
+F = Foil Mode
+B = Saber Mode

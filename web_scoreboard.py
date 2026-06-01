@@ -3,7 +3,7 @@
 from flask import Flask, jsonify, render_template_string
 import threading
 import logging
-
+import time
 
 class WebScoreboard:
 
@@ -72,6 +72,33 @@ class WebScoreboard:
         def score_p2_sub():
             self.scoreboard.manual_score("P2", -1)
             return jsonify({"status": "P2 score removed"})
+        
+        @self.app.route("/manual_offtarget/P1", methods=["POST"])
+        def manual_offtarget_p1():
+
+            packet = {
+                "player_id": "P1",
+                "hit_type": "offtarget",
+                "time": str(int(time.time() * 1000))
+            }
+
+            self.scoreboard.update_score(packet)
+
+            return jsonify({"status": "P1 off-target"})
+
+
+        @self.app.route("/manual_offtarget/P2", methods=["POST"])
+        def manual_offtarget_p2():
+
+            packet = {
+                "player_id": "P2",
+                "hit_type": "offtarget",
+                "time": str(int(time.time() * 1000))
+            }
+
+            self.scoreboard.update_score(packet)
+
+            return jsonify({"status": "P2 off-target"})
 
         @self.app.route("/timer/start", methods=["POST"])
         def timer_start():
@@ -477,6 +504,19 @@ PAGE_HTML = """
             background: linear-gradient(270deg, rgba(255,80,105,0.42), transparent 65%);
         }        
 
+        .screen-flash-offtarget-p1 {
+            background: linear-gradient(90deg, rgba(255,255,255,0.55), transparent 65%);
+        }
+
+        .screen-flash-offtarget-p2 {
+            background: linear-gradient(270deg, rgba(255,255,255,0.55), transparent 65%);
+        }
+
+        .flash-offtarget {
+            box-shadow: 0 0 90px rgba(255,255,255,0.95);
+            transform: scale(1.04);
+        }        
+
         .screen-flash-show {
             opacity: 1;
         }
@@ -826,6 +866,8 @@ PAGE_HTML = """
                         <button onclick="sendCommand('/score/p1/sub')">P1 -1</button>
                         <button onclick="sendCommand('/score/p2/add')">P2 +1</button>
                         <button onclick="sendCommand('/score/p2/sub')">P2 -1</button>
+                        <button onclick="manualOffTarget('P1')">P1 Off-Target</button>
+                        <button onclick="manualOffTarget('P2')">P2 Off-Target</button>                        
                     </div>
                 </div>
 
@@ -909,6 +951,8 @@ PAGE_HTML = """
         let lastP1Score = 0;
         let lastP2Score = 0;
 
+        let previousLastHit = "";        
+
         function flashCard(cardId, className) {
             const card = document.getElementById(cardId);
             card.classList.add(className);
@@ -925,7 +969,7 @@ PAGE_HTML = """
 
             setTimeout(() => {
                 flash.className = "screen-flash";
-            }, 250);
+            }, 500);
         }
 
         function renderCards(containerId, cards) {
@@ -1095,6 +1139,15 @@ PAGE_HTML = """
             updateScoreboard();
         }
 
+        async function manualOffTarget(player) {
+
+            const response = await fetch("/manual_offtarget/" + player, {
+                method: "POST"
+            });
+
+            updateScoreboard();
+        }
+
         function setupKeyboardShortcuts() {
 
             document.addEventListener("keydown", function(event) {
@@ -1205,6 +1258,25 @@ PAGE_HTML = """
                 flashScreen("screen-flash-p2");
                 playHitSound(440);
             }
+
+            if (
+                data.last_hit.toLowerCase().includes("off-target") &&
+                data.last_hit !== previousLastHit
+            ) {
+                if (data.last_hit.startsWith("P1")) {
+                    flashCard("p1_card", "flash-offtarget");
+                    flashScreen("screen-flash-offtarget-p1");
+                }
+
+                else if (data.last_hit.startsWith("P2")) {
+                    flashCard("p2_card", "flash-offtarget");
+                    flashScreen("screen-flash-offtarget-p2");
+                }
+
+                playHitSound(520);
+            }
+
+            previousLastHit = data.last_hit;
 
             lastP1Score = data.player_1_score;
             lastP2Score = data.player_2_score;

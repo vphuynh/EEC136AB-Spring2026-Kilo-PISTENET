@@ -96,11 +96,19 @@ class Scoreboard:
                 self.add_event(event_text)
                 print(Fore.MAGENTA + "Match already ended, score not updated")
                 return
+            
+            if hit_type == "offtarget":
+                event_text = f"[{time_stamp}] {player_id} off-target"
+                self.add_event(event_text)
+                self.last_hit_display = f"{player_id} off-target"
+                self.timer_running = False
+                print(Fore.WHITE + "Off-target touch detected, no score awarded")
+                return
 
             if hit_type != "hit":
                 print(Fore.YELLOW + "No score change because event was not a hit")
                 return
-
+            
             hit_key = (player_id, hit_type, time_stamp)
 
             if hit_key in self.counted_hits:
@@ -192,7 +200,7 @@ class Scoreboard:
             self.last_hit_display = f"{player_id} valid hit - clock stopped"
 
             self.check_winner()
-            
+
     def check_winner(self):
 
         if self.match_over:

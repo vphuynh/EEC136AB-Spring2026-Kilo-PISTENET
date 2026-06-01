@@ -115,6 +115,10 @@ class LaptopBLEReceiver:
                     print("Manual quit selected")
                     os._exit(0)
 
+                elif cmd == "o":
+                    print("TEST OFFTARGET COMMAND RECEIVED")
+                    self.handle_packet_data("P1,offtarget,123458")                    
+
                 else:
                     print("Unknown command. Use r or q.")
 
