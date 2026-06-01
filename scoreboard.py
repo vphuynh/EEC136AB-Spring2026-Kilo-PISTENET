@@ -91,21 +91,11 @@ class Scoreboard:
                 print(Fore.MAGENTA + "Timer expired, score not updated")
                 return
 
-            if not self.timer_running:
-                event_text = f"[{time_stamp}] {player_id} {hit_type} ignored because clock is paused"
-                self.add_event(event_text)
-                self.last_hit_display = f"{player_id} ignored - clock paused"
-                print(Fore.YELLOW + "Clock paused, score not updated")
-                return
-
             if self.match_over:
                 event_text = f"[{time_stamp}] {player_id} {hit_type} ignored because match already ended"
                 self.add_event(event_text)
                 print(Fore.MAGENTA + "Match already ended, score not updated")
                 return
-
-            event_text = f"[{time_stamp}] {player_id} {hit_type}"
-            self.add_event(event_text)
 
             if hit_type != "hit":
                 print(Fore.YELLOW + "No score change because event was not a hit")
@@ -118,9 +108,41 @@ class Scoreboard:
                 print(Fore.YELLOW + "Duplicate hit packet detected, score not updated")
                 return
 
-            self.counted_hits.add(hit_key)
-
             current_time = time.time()
+
+            # If clock is paused, only allow the OTHER player's hit
+            # if it arrives inside the lockout window after the first hit.
+            if not self.timer_running:
+
+                if self.last_hit_time is not None:
+                    time_difference = current_time - self.last_hit_time
+
+                    if time_difference < self.lockout_window and player_id != self.last_hit_player:
+                        self.counted_hits.add(hit_key)
+                        self.simultaneous_hits += 1
+
+                        event_text = f"[{time_stamp}] {player_id} hit counted inside lockout window"
+                        self.add_event(event_text)
+
+                        if player_id == "P1":
+                            self.player_1_score += 1
+                            print(Fore.GREEN + "Point awarded to Player 1 inside lockout window")
+
+                        elif player_id == "P2":
+                            self.player_2_score += 1
+                            print(Fore.RED + "Point awarded to Player 2 inside lockout window")
+
+                        self.last_hit_display = "Simultaneous hit - lockout window"
+                        self.check_winner()
+                        return
+
+                event_text = f"[{time_stamp}] {player_id} {hit_type} ignored because clock is paused"
+                self.add_event(event_text)
+                self.last_hit_display = f"{player_id} ignored - clock paused"
+                print(Fore.YELLOW + "Clock paused, score not updated")
+                return
+
+            self.counted_hits.add(hit_key)
 
             if self.last_hit_time is not None:
                 time_difference = current_time - self.last_hit_time
@@ -130,7 +152,7 @@ class Scoreboard:
                     if player_id != self.last_hit_player:
                         self.simultaneous_hits += 1
                         print(Fore.YELLOW + "Simultaneous hit detected")
-                        
+
                         if player_id == "P1":
                             self.player_1_score += 1
                             print(Fore.GREEN + "Point awarded to Player 1")
@@ -138,7 +160,7 @@ class Scoreboard:
                         elif player_id == "P2":
                             self.player_2_score += 1
                             print(Fore.RED + "Point awarded to Player 2")
-                        
+
                         self.timer_running = False
                         self.add_event("Clock stopped after simultaneous hit")
                         self.last_hit_display = "Simultaneous hit - clock stopped"
@@ -152,7 +174,7 @@ class Scoreboard:
 
             self.last_hit_time = current_time
             self.last_hit_player = player_id
-            
+
             if player_id == "P1":
                 self.player_1_score += 1
                 print(Fore.GREEN + "Point awarded to Player 1")
@@ -168,9 +190,9 @@ class Scoreboard:
             self.timer_running = False
             self.add_event("Clock stopped after valid hit")
             self.last_hit_display = f"{player_id} valid hit - clock stopped"
-            
-            self.check_winner()
 
+            self.check_winner()
+            
     def check_winner(self):
 
         if self.match_over:
