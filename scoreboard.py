@@ -91,6 +91,13 @@ class Scoreboard:
                 print(Fore.MAGENTA + "Timer expired, score not updated")
                 return
 
+            if not self.timer_running:
+                event_text = f"[{time_stamp}] {player_id} {hit_type} ignored because clock is paused"
+                self.add_event(event_text)
+                self.last_hit_display = f"{player_id} ignored - clock paused"
+                print(Fore.YELLOW + "Clock paused, score not updated")
+                return
+
             if self.match_over:
                 event_text = f"[{time_stamp}] {player_id} {hit_type} ignored because match already ended"
                 self.add_event(event_text)
@@ -123,7 +130,7 @@ class Scoreboard:
                     if player_id != self.last_hit_player:
                         self.simultaneous_hits += 1
                         print(Fore.YELLOW + "Simultaneous hit detected")
-
+                        
                         if player_id == "P1":
                             self.player_1_score += 1
                             print(Fore.GREEN + "Point awarded to Player 1")
@@ -131,6 +138,10 @@ class Scoreboard:
                         elif player_id == "P2":
                             self.player_2_score += 1
                             print(Fore.RED + "Point awarded to Player 2")
+                        
+                        self.timer_running = False
+                        self.add_event("Clock stopped after simultaneous hit")
+                        self.last_hit_display = "Simultaneous hit - clock stopped"
 
                         self.check_winner()
                         return
@@ -141,7 +152,7 @@ class Scoreboard:
 
             self.last_hit_time = current_time
             self.last_hit_player = player_id
-
+            
             if player_id == "P1":
                 self.player_1_score += 1
                 print(Fore.GREEN + "Point awarded to Player 1")
@@ -154,6 +165,10 @@ class Scoreboard:
                 print("Unknown player id, score not updated")
                 return
 
+            self.timer_running = False
+            self.add_event("Clock stopped after valid hit")
+            self.last_hit_display = f"{player_id} valid hit - clock stopped"
+            
             self.check_winner()
 
     def check_winner(self):

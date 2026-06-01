@@ -613,8 +613,11 @@ PAGE_HTML = """
                 }
 
                 body.showcase-mode .status-row {
-                    max-width: 1200px;
-                    margin-top: 28px;
+                    display: none;
+                }
+
+                body.showcase-mode .last-hit {
+                    display: none;
                 }
 
                 body.showcase-mode .main-scoreboard {
@@ -633,6 +636,10 @@ PAGE_HTML = """
                 body.showcase-mode .timer-time {
                     font-size: 92px;
                 }
+
+                body.showcase-mode .match-point {
+                    font-size: 22px;
+                }               
 
         .showcase-btn {
             position: fixed;
@@ -746,7 +753,7 @@ PAGE_HTML = """
 
         <div class="main-scoreboard">
             <div class="fighter-card left-card" id="p1_card">
-                <div class="fighter-label">LEFT STRIP</div>
+                <div class="fighter-label">LEFT</div>
                 <div class="fighter-name left-color">PLAYER 1</div>
                 <div class="score left-color" id="p1_score">0</div>
                 <div class="card-display" id="p1_cards"></div>
@@ -762,7 +769,7 @@ PAGE_HTML = """
             </div>
 
             <div class="fighter-card right-card" id="p2_card">
-                <div class="fighter-label">RIGHT STRIP</div>
+                <div class="fighter-label">RIGHT</div>
                 <div class="fighter-name right-color">PLAYER 2</div>
                 <div class="score right-color" id="p2_score">0</div>
                 <div class="card-display" id="p2_cards"></div>
@@ -1165,6 +1172,8 @@ PAGE_HTML = """
             else {
                 centerConsole.classList.add("center-halt");
             }
+            
+            const lockoutMs = Math.round(data.lockout_window * 1000);
 
             document.getElementById("mode").innerText =
                 data.bout_type.toUpperCase() +
@@ -1173,8 +1182,8 @@ PAGE_HTML = """
                 " | FIRST TO " +
                 data.winning_score +
                 " | LOCKOUT " +
-                data.lockout_window +
-                "s";
+                lockoutMs +
+                " ms";
 
             updateStatus("p1_status", data.device_status["Fencing_P1"]);
             updateStatus("p2_status", data.device_status["Fencing_P2"]);
