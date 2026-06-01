@@ -27,15 +27,34 @@ class WebScoreboard:
         def repeater_data():
             state = self.scoreboard.get_state()
 
+            if state["match_over"]:
+                phrase = "VICTORY"
+            elif state["timer_running"]:
+                phrase = "ALLEZ"
+            elif (
+                state["player_1_score"] == 0 and
+                state["player_2_score"] == 0 and
+                state["timer_display"] == "3:00"
+            ):
+                phrase = "EN GARDE"
+            else:
+                phrase = "HALT"
+
             return jsonify({
                 "p1": state["player_1_score"],
                 "p2": state["player_2_score"],
+                "score": str(state["player_1_score"]) + "-" + str(state["player_2_score"]),
                 "timer": state["timer_display"],
+                "phrase": phrase,
                 "weapon": state["weapon_mode"],
                 "bout": state["bout_type"],
+                "lockout_ms": int(state["lockout_window"] * 1000),
+                "match_point": state["match_point"],
                 "last": state["last_hit"],
                 "match_over": state["match_over"],
-                "winner": state["winner"]
+                "winner": state["winner"],
+                "p1_cards": state["player_1_cards"],
+                "p2_cards": state["player_2_cards"]
             })
 
         @self.app.route("/reset", methods=["POST"])
@@ -404,10 +423,25 @@ PAGE_HTML = """
 
         .phrase {
             margin-top: 22px;
-            font-size: 28px;
+            font-size: 42px;
             font-weight: 900;
             letter-spacing: 5px;
             color: #ffffff;
+        }
+
+        .phrase-allez {
+            color: #34ffaa;
+            text-shadow: 0 0 24px rgba(52,255,170,0.8);
+        }
+
+        .phrase-halt {
+            color: #ff5069;
+            text-shadow: 0 0 28px rgba(255,80,105,0.9);
+        }
+
+        .phrase-ready {
+            color: #facc15;
+            text-shadow: 0 0 24px rgba(250,204,21,0.75);
         }
 
         .last-hit {
@@ -608,6 +642,17 @@ PAGE_HTML = """
             transform: scale(1.04);
         }
 
+        .winner-card {
+            border: 2px solid #facc15 !important;
+            box-shadow: 0 0 100px rgba(250,204,21,0.85) !important;
+        }
+
+        .winner-card .score,
+        .winner-card .fighter-name {
+            color: #facc15 !important;
+            text-shadow: 0 0 30px rgba(250,204,21,0.9) !important;
+        }        
+
         .overlay {
             display: none;
             max-width: 1200px;
@@ -666,20 +711,30 @@ PAGE_HTML = """
                 }
 
                 body.showcase-mode .fighter-card {
-                    min-height: 500px;
+                    min-height: 680px;
                 }
 
                 body.showcase-mode .score {
-                    font-size: 220px;
+                    font-size: 280px;
+                    margin-top: 76px;
                 }
 
                 body.showcase-mode .timer-time {
-                    font-size: 92px;
+                    font-size: 116px;
+                }
+
+                body.showcase-mode .phrase {
+                    font-size: 58px;
+                    letter-spacing: 4px;
+                }
+
+                body.showcase-mode .timer-state {
+                    font-size: 22px;
                 }
 
                 body.showcase-mode .match-point {
-                    font-size: 22px;
-                }               
+                    font-size: 26px;
+                }              
 
         .showcase-btn {
             position: fixed;
@@ -1018,17 +1073,28 @@ PAGE_HTML = """
             }
         }
 
-         function toggleShowcaseMode() {
+        function toggleShowcaseMode() {
+
             document.body.classList.toggle("showcase-mode");
 
-            const button = document.getElementById("showcase_btn");
+            const showcaseBtn = document.getElementById("showcase_btn");
+            const soundBtn = document.getElementById("sound_btn");
+            const fullscreenBtn = document.querySelector(".fullscreen-btn");
 
             if (document.body.classList.contains("showcase-mode")) {
-                button.innerText = "🧪";
-            } else {
-                button.innerText = "🎬";
+
+                showcaseBtn.style.display = "none";
+                soundBtn.style.display = "none";
+                fullscreenBtn.style.display = "none";
+
             }
-        }       
+            else {
+
+                showcaseBtn.style.display = "block";
+                soundBtn.style.display = "block";
+                fullscreenBtn.style.display = "block";
+            }
+        }     
 
         function updateStatus(elementId, status) {
             const element = document.getElementById(elementId);
@@ -1193,7 +1259,29 @@ PAGE_HTML = """
                 else if (key === "b") {
                     sendCommand("/weapon/saber");
                 }
+                else if (key === "o") {
+                    manualOffTarget("P1");
+                }
+
+                else if (key === "p") {
+                    manualOffTarget("P2");
+                }
+                else if (key === "v") {
+                    toggleShowcaseMode();
+                }
+                else if (key === "g") {
+                    toggleFullscreen();
+                }                
             });
+        }
+
+        function setBoutPhrase(text, className) {
+            const phrase = document.getElementById("bout_phrase");
+
+            phrase.innerText = text;
+
+            phrase.classList.remove("phrase-allez", "phrase-halt", "phrase-ready");
+            phrase.classList.add(className);
         }
 
         async function updateScoreboard() {
@@ -1301,12 +1389,12 @@ PAGE_HTML = """
 
             if (data.timer_seconds <= 0) {
 
-                document.getElementById("bout_phrase").innerText = "HALT";
+                setBoutPhrase("HALT", "phrase-halt");
 
             }
             else if (data.timer_running) {
 
-                document.getElementById("bout_phrase").innerText = "ALLEZ";
+                setBoutPhrase("ALLEZ", "phrase-allez");
 
             }
             else {
@@ -1317,12 +1405,12 @@ PAGE_HTML = """
                     data.timer_display === "3:00"
                 ) {
 
-                    document.getElementById("bout_phrase").innerText = "EN GARDE";
+                    setBoutPhrase("EN GARDE", "phrase-ready");
 
                 }
                 else {
 
-                    document.getElementById("bout_phrase").innerText = "HALT";
+                    setBoutPhrase("HALT", "phrase-halt");
 
                 }
             }               
@@ -1349,18 +1437,35 @@ PAGE_HTML = """
 
             updateEventFeed(data.event_history);
 
+            const p1Card = document.getElementById("p1_card");
+            const p2Card = document.getElementById("p2_card");
+
+            p1Card.classList.remove("winner-card");
+            p2Card.classList.remove("winner-card");
+
+            document.getElementById("winner").style.display = "none";
+            document.getElementById("winner").innerText = "";
+
             if (data.match_over) {
+
                 if (!winnerSoundPlayed) {
-                        playHitSound(880);
-                        winnerSoundPlayed = true;
-                    }
-                document.getElementById("winner").style.display = "block";
-                document.getElementById("winner").innerText =
-                    "VICTORY — " + data.winner.toUpperCase();
-            } else {
+                    playHitSound(880);
+                    winnerSoundPlayed = true;
+                }
+
+                setBoutPhrase("VICTORY", "phrase-ready");
+
+                if (data.winner === "Player 1") {
+                    p1Card.classList.add("winner-card");
+                }
+
+                else if (data.winner === "Player 2") {
+                    p2Card.classList.add("winner-card");
+                }
+            }
+
+            else {
                 winnerSoundPlayed = false;
-                document.getElementById("winner").style.display = "none";
-                document.getElementById("winner").innerText = "";
             }
         }
 

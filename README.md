@@ -37,3 +37,7 @@ E = Epee Mode
 F = Foil Mode
 
 B = Saber Mode
+
+V = Showcase Mode
+
+G = Fullscreen

@@ -310,10 +310,16 @@ class Scoreboard:
             match_point = "None"
 
             if not self.match_over:
-                if self.player_1_score == self.winning_score - 1:
+                p1_match_point = self.player_1_score == self.winning_score - 1
+                p2_match_point = self.player_2_score == self.winning_score - 1
+
+                if p1_match_point and p2_match_point:
+                    match_point = "Both Players"
+
+                elif p1_match_point:
                     match_point = "Player 1"
 
-                elif self.player_2_score == self.winning_score - 1:
+                elif p2_match_point:
                     match_point = "Player 2"
 
             if self.last_packet_received_time is None:
