@@ -225,8 +225,15 @@ PAGE_HTML = """
             font-family: Arial, sans-serif;
             color: white;
             background:
-                linear-gradient(90deg, rgba(0, 255, 150, 0.12), transparent 30%, transparent 70%, rgba(255, 70, 90, 0.14)),
-                radial-gradient(circle at top, #1f2937 0%, #0b0f17 45%, #020305 100%);
+                radial-gradient(circle at top, rgba(250,204,21,0.12), transparent 28%),
+                linear-gradient(
+                    90deg,
+                    rgba(18,53,44,0.28),
+                    transparent 35%,
+                    transparent 65%,
+                    rgba(58,16,24,0.30)
+                ),
+                radial-gradient(circle at top, #1b2433 0%, #07111d 48%, #020305 100%);
             overflow-x: hidden;
         }
 
@@ -255,15 +262,20 @@ PAGE_HTML = """
         .title h1 {
             margin: 0;
             font-size: 52px;
-            letter-spacing: 8px;
+            letter-spacing: 10px;
             font-weight: 900;
+            color: #f8f1d2;
+            text-shadow:
+                0 0 18px rgba(248,241,210,0.35),
+                0 0 42px rgba(250,204,21,0.25);
         }
 
         .title .brand {
-            color: #facc15;
-            letter-spacing: 4px;
+            color: #f5c542;
+            letter-spacing: 5px;
             font-size: 15px;
             margin-top: 8px;
+            text-shadow: 0 0 18px rgba(245,197,66,0.45);
         }
 
         .bout-info {
@@ -279,6 +291,9 @@ PAGE_HTML = """
             grid-template-columns: 1fr 300px 1fr;
             gap: 24px;
             align-items: stretch;
+            padding: 18px;
+            border-radius: 40px;
+            border: 1px solid rgba(245,197,66,0.18);
         }
 
         .fighter-card {
@@ -311,23 +326,23 @@ PAGE_HTML = """
         }
 
         .left-card {
-            background: linear-gradient(145deg, #064e3b, #07111d 65%);
-            border: 1px solid rgba(52, 255, 170, 0.35);
+            background: linear-gradient(145deg, #12352c, #07111d 68%);
+            border: 1px solid rgba(245,197,66,0.38);
         }
 
         .left-card::after {
-            background: #34ffaa;
-            box-shadow: 0 0 22px #34ffaa;
+            background: #f5c542;
+            box-shadow: 0 0 22px rgba(245,197,66,0.8);
         }
 
         .right-card {
-            background: linear-gradient(145deg, #5f111b, #07111d 65%);
-            border: 1px solid rgba(255, 80, 105, 0.4);
+            background: linear-gradient(145deg, #3a1018, #07111d 68%);
+            border: 1px solid rgba(245,197,66,0.28);
         }
 
         .right-card::after {
-            background: #ff5069;
-            box-shadow: 0 0 22px #ff5069;
+            background: #c43f4f;
+            box-shadow: 0 0 22px rgba(196,63,79,0.75);
         }
 
         .fighter-label {
@@ -370,7 +385,7 @@ PAGE_HTML = """
         }
 
         .center-console {
-            background: rgba(255,255,255,0.07);
+            background: rgba(12,16,24,0.85);
             border: 1px solid rgba(255,255,255,0.12);
             border-radius: 34px;
             padding: 24px;
@@ -382,8 +397,8 @@ PAGE_HTML = """
         }
 
         .center-ready {
-            border-color: rgba(56,189,248,0.75);
-            box-shadow: 0 0 45px rgba(56,189,248,0.28);
+            border-color: rgba(245,197,66,0.75);
+            box-shadow: 0 0 45px rgba(245,197,66,0.30);
         }
 
         .center-active {
@@ -402,7 +417,7 @@ PAGE_HTML = """
         }
 
         .timer-label {
-            color: #94a3b8;
+            color: #f5c542;
             font-size: 13px;
             letter-spacing: 3px;
             margin-bottom: 8px;
@@ -425,8 +440,9 @@ PAGE_HTML = """
             margin-top: 22px;
             font-size: 42px;
             font-weight: 900;
-            letter-spacing: 5px;
+            letter-spacing: 4px;
             color: #ffffff;
+            white-space: nowrap;
         }
 
         .phrase-allez {
@@ -724,8 +740,9 @@ PAGE_HTML = """
                 }
 
                 body.showcase-mode .phrase {
-                    font-size: 58px;
-                    letter-spacing: 4px;
+                    font-size: 48px;
+                    letter-spacing: 3px;
+                    margin-top: 45px;
                 }
 
                 body.showcase-mode .timer-state {
@@ -884,7 +901,7 @@ PAGE_HTML = """
         <div class="lower-grid">
             <div class="panel">
                 <div class="panel-title">CONTROL CONSOLE</div>
-                <div class="section-label">Shortcuts: Space start/pause | R reset | 1/P1 | 2/P2 | S save</div>
+                <div class="section-label">Shortcuts: Space start/pause | R reset | 1/2 add | 3/4 subtract | O/P off-target | E/F/S weapon | V showcase</div>
 
                 <div class="control-section">
                     <div class="section-label">TIMER</div>
@@ -1244,8 +1261,12 @@ PAGE_HTML = """
                     sendCommand("/score/p2/add");
                 }
 
-                else if (key === "s") {
-                    saveMatchToBrowser();
+                else if (key === "3") {
+                    sendCommand("/score/p1/sub");
+                }
+
+                else if (key === "4") {
+                    sendCommand("/score/p2/sub");
                 }
 
                 else if (key === "e") {
@@ -1256,7 +1277,7 @@ PAGE_HTML = """
                     sendCommand("/weapon/foil");
                 }
 
-                else if (key === "b") {
+                else if (key === "s") {
                     sendCommand("/weapon/saber");
                 }
                 else if (key === "o") {

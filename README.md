@@ -30,13 +30,15 @@ R = Reset Match
 
 2 = Add Point to P2
 
-S = Save Match
+3 = Subtract Point to P1
+
+4 = Subtract Point to P2
 
 E = Epee Mode
 
 F = Foil Mode
 
-B = Saber Mode
+S = Saber Mode
 
 V = Showcase Mode
 
