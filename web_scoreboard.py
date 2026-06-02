@@ -331,8 +331,8 @@ PAGE_HTML = """
         }
 
         .left-card::after {
-            background: #f5c542;
-            box-shadow: 0 0 22px rgba(245,197,66,0.8);
+            background: #34ffaa;
+            box-shadow: 0 0 22px rgba(52,255,170,0.8);
         }
 
         .right-card {
@@ -661,6 +661,16 @@ PAGE_HTML = """
         .winner-card {
             border: 2px solid #facc15 !important;
             box-shadow: 0 0 100px rgba(250,204,21,0.85) !important;
+        }
+
+        .winner-card::after {
+            background: #f5c542 !important;
+            box-shadow: 0 0 22px rgba(245,197,66,0.8) !important;
+        }
+
+        .loser-card {
+            opacity: 0.70;
+            filter: saturate(0.85);
         }
 
         .winner-card .score,
@@ -1461,8 +1471,8 @@ PAGE_HTML = """
             const p1Card = document.getElementById("p1_card");
             const p2Card = document.getElementById("p2_card");
 
-            p1Card.classList.remove("winner-card");
-            p2Card.classList.remove("winner-card");
+            p1Card.classList.remove("winner-card", "loser-card");
+            p2Card.classList.remove("winner-card", "loser-card");
 
             document.getElementById("winner").style.display = "none";
             document.getElementById("winner").innerText = "";
@@ -1478,10 +1488,11 @@ PAGE_HTML = """
 
                 if (data.winner === "Player 1") {
                     p1Card.classList.add("winner-card");
+                    p2Card.classList.add("loser-card");
                 }
-
                 else if (data.winner === "Player 2") {
                     p2Card.classList.add("winner-card");
+                    p1Card.classList.add("loser-card");
                 }
             }
 
