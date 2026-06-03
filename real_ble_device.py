@@ -2,6 +2,7 @@ import asyncio
 from bleak import BleakScanner, BleakClient
 
 DEVICE_NAMES = ["Fencing_P1", "Fencing_P2"]
+WEAPON_UUID = "9BED9980-6371-4B74-A021-9AE863131F63"
 
 
 class RealBLEDevice:
@@ -53,9 +54,10 @@ class RealBLEDevice:
                 async with BleakClient(device) as client:
                     self.update_status(device_name, "connected")
                     print("Connected to", device_name)
+                    print("Weapon UUID:", WEAPON_UUID)
 
                     notify_char = None
-                    write_char = None
+                    write_char = WEAPON_UUID
                     write_with_response = True
 
                     for service in client.services:

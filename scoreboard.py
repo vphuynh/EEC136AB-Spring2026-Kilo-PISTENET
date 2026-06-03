@@ -82,6 +82,7 @@ class Scoreboard:
             player_id = parsed_packet["player_id"]
             hit_type = parsed_packet["hit_type"]
             time_stamp = parsed_packet["time"]
+            target_flag = parsed_packet["target_flag"]
 
             self.last_hit_display = f"{player_id} {hit_type} ({time_stamp})"
 
@@ -97,16 +98,20 @@ class Scoreboard:
                 print(Fore.MAGENTA + "Match already ended, score not updated")
                 return
             
-            if hit_type == "offtarget":
-                event_text = f"[{time_stamp}] {player_id} off-target"
-                self.add_event(event_text)
-                self.last_hit_display = f"{player_id} off-target"
-                self.timer_running = False
-                print(Fore.WHITE + "Off-target touch detected, no score awarded")
-                return
-
             if hit_type != "hit":
                 print(Fore.YELLOW + "No score change because event was not a hit")
+                return
+            
+            if target_flag == 0:
+
+                event_text = f"[{time_stamp}] {player_id} off-target"
+                self.add_event(event_text)
+
+                self.last_hit_display = f"{player_id} off-target"
+
+                self.timer_running = False
+
+                print(Fore.WHITE + "Off-target touch detected, no score awarded")
                 return
             
             hit_key = (player_id, hit_type, time_stamp)
