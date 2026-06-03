@@ -9,9 +9,15 @@ class RealBLEDevice:
     def __init__(self):
         self.device_names = DEVICE_NAMES
         self.status_callback = None
+        self.weapon_mode = "epee"
+        self.last_sent_weapon = {}
 
     def set_status_callback(self, callback):
         self.status_callback = callback
+
+    def set_weapon_mode(self, weapon_mode):
+        self.weapon_mode = weapon_mode
+        print("[BLE COMMAND] weapon mode set to:", weapon_mode)
 
     def update_status(self, device_name, status):
         if self.status_callback:
@@ -49,14 +55,23 @@ class RealBLEDevice:
                     print("Connected to", device_name)
 
                     notify_char = None
+                    write_char = None
+                    write_with_response = True
 
                     for service in client.services:
                         for char in service.characteristics:
-                            if "notify" in char.properties:
-                                notify_char = char.uuid
-                                break
 
-                        if notify_char is not None:
+                            if notify_char is None and "notify" in char.properties:
+                                notify_char = char.uuid
+
+                            if write_char is None:
+                                if "write" in char.properties or "write-without-response" in char.properties:
+                                    write_char = char.uuid
+
+                                    if "write-without-response" in char.properties and "write" not in char.properties:
+                                        write_with_response = False
+
+                        if notify_char is not None and write_char is not None:
                             break
 
                     if notify_char is None:
@@ -84,6 +99,26 @@ class RealBLEDevice:
                     print("Listening... press Ctrl+C to stop manually.\n")
 
                     while client.is_connected:
+
+                        if write_char is not None:
+                            last_sent = self.last_sent_weapon.get(device_name)
+
+                            if last_sent != self.weapon_mode:
+                                command = "weapon," + self.weapon_mode
+
+                                try:
+                                    await client.write_gatt_char(
+                                        write_char,
+                                        command.encode("utf-8"),
+                                        response=write_with_response
+                                    )
+
+                                    self.last_sent_weapon[device_name] = self.weapon_mode
+                                    print("[BLE WRITE]", device_name, "sent:", command)
+
+                                except Exception as error:
+                                    print("[BLE WRITE ERROR]", device_name, error)
+
                         await asyncio.sleep(1)
 
                     self.update_status(device_name, "disconnected")

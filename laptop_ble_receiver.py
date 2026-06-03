@@ -117,10 +117,19 @@ class LaptopBLEReceiver:
 
                 elif cmd == "o":
                     print("TEST OFFTARGET COMMAND RECEIVED")
-                    self.handle_packet_data("P1,offtarget,123458")                    
+                    self.handle_packet_data("P1,offtarget,123458")
+
+                elif cmd == "e":
+                    self.device.set_weapon_mode("epee")
+
+                elif cmd == "f":
+                    self.device.set_weapon_mode("foil")
+
+                elif cmd == "s":
+                    self.device.set_weapon_mode("saber")
 
                 else:
-                    print("Unknown command. Use r or q.")
+                    print("Commands: r = reset match, q = quit, e/f/s = weapon mode")
 
         threading.Thread(target=command_loop, daemon=True).start()
 
