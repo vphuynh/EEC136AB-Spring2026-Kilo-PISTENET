@@ -21,10 +21,10 @@ class LaptopBLEReceiver:
         self.scoreboard = Scoreboard(bout_type="de")
         self.scoreboard.device_status = self.device_status
 
-        self.web_scoreboard = WebScoreboard(self.scoreboard)
-
         self.device = RealBLEDevice()
         self.device.set_status_callback(self.update_device_status)
+
+        self.web_scoreboard = WebScoreboard(self.scoreboard, self.device)
 
     def update_device_status(self, device_name, status):
 
@@ -117,7 +117,7 @@ class LaptopBLEReceiver:
 
                 elif cmd == "o":
                     print("TEST OFFTARGET COMMAND RECEIVED")
-                    self.handle_packet_data("P1,offtarget,123458")
+                    self.handle_packet_data("P1,hit,0,123458")
 
                 elif cmd == "e":
                     self.device.set_weapon_mode("epee")

@@ -6,9 +6,10 @@ import logging
 import time
 
 class WebScoreboard:
-
-    def __init__(self, scoreboard):
+    
+    def __init__(self, scoreboard, ble_device=None):
         self.scoreboard = scoreboard
+        self.ble_device = ble_device
         self.app = Flask(__name__)
 
         @self.app.route("/")
@@ -97,7 +98,8 @@ class WebScoreboard:
 
             packet = {
                 "player_id": "P1",
-                "hit_type": "offtarget",
+                "hit_type": "hit",
+                "target_flag": 0,
                 "time": str(int(time.time() * 1000))
             }
 
@@ -111,7 +113,8 @@ class WebScoreboard:
 
             packet = {
                 "player_id": "P2",
-                "hit_type": "offtarget",
+                "hit_type": "hit",
+                "target_flag": 0,
                 "time": str(int(time.time() * 1000))
             }
 
@@ -137,16 +140,28 @@ class WebScoreboard:
         @self.app.route("/weapon/epee", methods=["POST"])
         def weapon_epee():
             self.scoreboard.set_weapon("epee")
+
+            if self.ble_device is not None:
+                self.ble_device.set_weapon_mode("epee")
+
             return jsonify({"status": "epee selected"})
 
         @self.app.route("/weapon/foil", methods=["POST"])
         def weapon_foil():
             self.scoreboard.set_weapon("foil")
+
+            if self.ble_device is not None:
+                self.ble_device.set_weapon_mode("foil")
+
             return jsonify({"status": "foil selected"})
 
         @self.app.route("/weapon/saber", methods=["POST"])
         def weapon_saber():
             self.scoreboard.set_weapon("saber")
+
+            if self.ble_device is not None:
+                self.ble_device.set_weapon_mode("saber")
+
             return jsonify({"status": "saber selected"})
         
         @self.app.route("/preset/pool", methods=["POST"])
