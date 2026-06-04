@@ -1,6 +1,8 @@
 # laptop_ble_receiver.py
 
 from collections import deque
+import serial
+from serial.tools import list_ports
 from real_ble_device import RealBLEDevice
 from parser import parse_data, print_parsed
 from scoreboard import Scoreboard
@@ -8,6 +10,15 @@ from web_scoreboard import WebScoreboard
 
 
 class LaptopBLEReceiver:
+    def find_repeater_port(self):
+
+        ports = list_ports.comports()
+
+        for port in ports:
+            if "usbmodem" in port.device:
+                return port.device
+
+        return None
 
     def __init__(self):
         self.packet_queue = deque(maxlen=50)
@@ -24,7 +35,14 @@ class LaptopBLEReceiver:
         self.device = RealBLEDevice()
         self.device.set_status_callback(self.update_device_status)
 
-        self.web_scoreboard = WebScoreboard(self.scoreboard, self.device)
+        self.repeater = None
+        self.connect_repeater()
+        
+        self.web_scoreboard = WebScoreboard(
+                    self.scoreboard,
+                    self.device,
+                    self.send_score_to_repeater
+                )
 
     def update_device_status(self, device_name, status):
 
@@ -66,7 +84,47 @@ class LaptopBLEReceiver:
 
         self.packet_queue.append(data)
         self.process_next_packet()
+    
+    def connect_repeater(self):
 
+        repeater_port = self.find_repeater_port()
+
+        if repeater_port is None:
+            print("Repeater not found")
+            self.repeater = None
+            return
+
+        try:
+            self.repeater = serial.Serial(
+                repeater_port,
+                115200,
+                timeout=1
+            )
+
+            print("Repeater connected on", repeater_port)
+
+        except Exception as e:
+            print("Repeater connect error:", e)
+            self.repeater = None
+
+
+    def send_score_to_repeater(self):
+
+        if self.repeater is None:
+            self.connect_repeater()
+
+        if self.repeater is None:
+            return
+
+        try:
+            message = f"{self.scoreboard.player_1_score},{self.scoreboard.player_2_score}\n"
+            self.repeater.write(message.encode("utf-8"))
+            print("[REPEATER]", message.strip())
+
+        except Exception as e:
+            print("Repeater send error:", e)
+            self.repeater = None
+    
     def process_next_packet(self):
 
         if len(self.packet_queue) == 0:
@@ -86,6 +144,7 @@ class LaptopBLEReceiver:
             self.scoreboard.update_score(None)
 
         self.scoreboard.print_scoreboard()
+        self.send_score_to_repeater()
 
     def start(self):
 
@@ -96,7 +155,7 @@ class LaptopBLEReceiver:
         print("==============================")
         print("Web scoreboard: http://127.0.0.1:5000")
         print(f"Scoreboard: {self.scoreboard.bout_type.upper()} bout, first to {self.scoreboard.winning_score}")
-        print("Commands: r = reset match, q = quit")
+        print("Commands: r = reset match, q = quit, e/f/s = weapon mode changes")
         print("==============================\n")
 
         import threading
@@ -109,6 +168,7 @@ class LaptopBLEReceiver:
                 if cmd == "r":
                     self.packet_count = 0
                     self.scoreboard.reset_match()
+                    self.send_score_to_repeater()
                     print("\n--- Match Reset ---\n")
 
                 elif cmd == "q":

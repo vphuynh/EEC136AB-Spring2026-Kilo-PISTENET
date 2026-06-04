@@ -1,8 +1,20 @@
-How to run:
+# PisteNet
+
+PisteNet is a wireless fencing scoring system that uses two BLE-enabled player devices, a laptop receiver, and a scoreboard interface to track and display fencing bout results in real time.
+
+## Features
+- BLE hit detection from two player devices
+- Real-time web scoreboard
+- Multiple weapon modes (Epee, Foil, Saber)
+- Pool and Direct Elimination bout presets
+- Serial repeater support for external displays
+- Match history and event logging
+
+## How to run
 
 1. Install Python (3.10+)
 2. Install dependencies:
-    pip install bleak colorama flask
+    pip install bleak colorama flask pyserial
 3. Run:
     python3 main.py
 
@@ -10,17 +22,25 @@ Make sure:
 - Both PSoC devices are powered
 - Device names: Fencing_P1 and Fencing_P2
 
-Terminal commands:
+## Terminal commands
 
 r = reset match
 
 q = quit program
 
-for web scoreboard: open http://127.0.0.1:5000, after running python3 main.py
+e/f/s = weapon mode change
 
-for repeater display: open http://127.0.0.1:5000/repeater
+for web scoreboard: 
 
-Keyboard Shortcuts:
+open http://127.0.0.1:5000
+
+The browser repeater page is available at:
+
+http://127.0.0.1:5000/repeater
+
+The primary repeater used during demonstrations is the Pico Unicorn serial repeater.
+
+## Keyboard Shortcuts
 
 Space = Start / Pause Timer
 

@@ -7,10 +7,15 @@ import time
 
 class WebScoreboard:
     
-    def __init__(self, scoreboard, ble_device=None):
+    def __init__(self, scoreboard, ble_device=None, repeater_callback=None):
         self.scoreboard = scoreboard
         self.ble_device = ble_device
+        self.repeater_callback = repeater_callback
         self.app = Flask(__name__)
+
+        def sync_repeater():
+            if self.repeater_callback is not None:
+                self.repeater_callback()
 
         @self.app.route("/")
         def home():
@@ -49,6 +54,8 @@ class WebScoreboard:
                 "phrase": phrase,
                 "weapon": state["weapon_mode"],
                 "bout": state["bout_type"],
+                "winning_score": state["winning_score"],
+                "timer_running": state["timer_running"],
                 "lockout_ms": int(state["lockout_window"] * 1000),
                 "match_point": state["match_point"],
                 "last": state["last_hit"],
@@ -61,36 +68,43 @@ class WebScoreboard:
         @self.app.route("/reset", methods=["POST"])
         def reset():
             self.scoreboard.reset_match()
+            sync_repeater()
             return jsonify({"status": "reset complete"})
 
         @self.app.route("/mode/pool", methods=["POST"])
         def set_pool():
             self.scoreboard.set_mode("pool")
+            sync_repeater()
             return jsonify({"status": "pool mode selected"})
 
         @self.app.route("/mode/de", methods=["POST"])
         def set_de():
             self.scoreboard.set_mode("de")
+            sync_repeater()
             return jsonify({"status": "de mode selected"})
 
         @self.app.route("/score/p1/add", methods=["POST"])
         def score_p1_add():
             self.scoreboard.manual_score("P1", 1)
+            sync_repeater()
             return jsonify({"status": "P1 score added"})
 
         @self.app.route("/score/p2/add", methods=["POST"])
         def score_p2_add():
             self.scoreboard.manual_score("P2", 1)
+            sync_repeater()
             return jsonify({"status": "P2 score added"})
 
         @self.app.route("/score/p1/sub", methods=["POST"])
         def score_p1_sub():
             self.scoreboard.manual_score("P1", -1)
+            sync_repeater()
             return jsonify({"status": "P1 score removed"})
 
         @self.app.route("/score/p2/sub", methods=["POST"])
         def score_p2_sub():
             self.scoreboard.manual_score("P2", -1)
+            sync_repeater()
             return jsonify({"status": "P2 score removed"})
         
         @self.app.route("/manual_offtarget/P1", methods=["POST"])
@@ -104,6 +118,7 @@ class WebScoreboard:
             }
 
             self.scoreboard.update_score(packet)
+            sync_repeater()
 
             return jsonify({"status": "P1 off-target"})
 
@@ -119,22 +134,26 @@ class WebScoreboard:
             }
 
             self.scoreboard.update_score(packet)
+            sync_repeater()
 
             return jsonify({"status": "P2 off-target"})
 
         @self.app.route("/timer/start", methods=["POST"])
         def timer_start():
             self.scoreboard.start_timer()
+            sync_repeater()
             return jsonify({"status": "timer started"})
 
         @self.app.route("/timer/pause", methods=["POST"])
         def timer_pause():
             self.scoreboard.pause_timer()
+            sync_repeater()
             return jsonify({"status": "timer paused"})
 
         @self.app.route("/timer/reset", methods=["POST"])
         def timer_reset():
             self.scoreboard.reset_timer()
+            sync_repeater()
             return jsonify({"status": "timer reset"})
 
         @self.app.route("/weapon/epee", methods=["POST"])
@@ -143,6 +162,8 @@ class WebScoreboard:
 
             if self.ble_device is not None:
                 self.ble_device.set_weapon_mode("epee")
+
+            sync_repeater()
 
             return jsonify({"status": "epee selected"})
 
@@ -153,6 +174,8 @@ class WebScoreboard:
             if self.ble_device is not None:
                 self.ble_device.set_weapon_mode("foil")
 
+            sync_repeater()
+
             return jsonify({"status": "foil selected"})
 
         @self.app.route("/weapon/saber", methods=["POST"])
@@ -162,48 +185,58 @@ class WebScoreboard:
             if self.ble_device is not None:
                 self.ble_device.set_weapon_mode("saber")
 
+            sync_repeater()
+
             return jsonify({"status": "saber selected"})
         
         @self.app.route("/preset/pool", methods=["POST"])
         def preset_pool():
             self.scoreboard.set_bout_preset("pool")
+            sync_repeater()
             return jsonify({"status": "pool preset selected"})
 
 
         @self.app.route("/preset/de", methods=["POST"])
         def preset_de():
             self.scoreboard.set_bout_preset("de")
+            sync_repeater()
             return jsonify({"status": "de preset selected"})
 
 
         @self.app.route("/preset/practice", methods=["POST"])
         def preset_practice():
             self.scoreboard.set_bout_preset("practice")
+            sync_repeater()
             return jsonify({"status": "practice preset selected"})
         
         @self.app.route("/card/p1/yellow", methods=["POST"])
         def card_p1_yellow():
             self.scoreboard.add_card("P1", "yellow")
+            sync_repeater()
             return jsonify({"status": "P1 yellow card"})
 
         @self.app.route("/card/p1/red", methods=["POST"])
         def card_p1_red():
             self.scoreboard.add_card("P1", "red")
+            sync_repeater()
             return jsonify({"status": "P1 red card"})
 
         @self.app.route("/card/p2/yellow", methods=["POST"])
         def card_p2_yellow():
             self.scoreboard.add_card("P2", "yellow")
+            sync_repeater()
             return jsonify({"status": "P2 yellow card"})
 
         @self.app.route("/card/p2/red", methods=["POST"])
         def card_p2_red():
             self.scoreboard.add_card("P2", "red")
+            sync_repeater()
             return jsonify({"status": "P2 red card"})
 
         @self.app.route("/card/clear", methods=["POST"])
         def card_clear():
             self.scoreboard.clear_cards()
+            sync_repeater()
             return jsonify({"status": "cards cleared"})
 
 
@@ -1675,19 +1708,19 @@ REPEATER_HTML = """
 
     <script>
         async function updateRepeater() {
-            const response = await fetch("/data");
+            const response = await fetch("/repeater-data");
             const data = await response.json();
 
             document.getElementById("mode").innerText =
-                data.bout_type.toUpperCase() +
+                data.bout.toUpperCase() +
                 " | " +
-                data.weapon_mode.toUpperCase() +
+                data.weapon.toUpperCase() +
                 " | FIRST TO " +
                 data.winning_score;
 
-            document.getElementById("p1_score").innerText = data.player_1_score;
-            document.getElementById("p2_score").innerText = data.player_2_score;
-            document.getElementById("timer").innerText = data.timer_display;
+            document.getElementById("p1_score").innerText = data.p1;
+            document.getElementById("p2_score").innerText = data.p2;
+            document.getElementById("timer").innerText = data.timer;
 
             if (data.match_over) {
                 document.getElementById("phrase").innerText = "VICTORY";
@@ -1704,7 +1737,7 @@ REPEATER_HTML = """
                 }
 
                 document.getElementById("last_event").innerText =
-                    "Last Event: " + data.last_hit;
+                    "Last Event: " + data.last;
             }
         }
 
