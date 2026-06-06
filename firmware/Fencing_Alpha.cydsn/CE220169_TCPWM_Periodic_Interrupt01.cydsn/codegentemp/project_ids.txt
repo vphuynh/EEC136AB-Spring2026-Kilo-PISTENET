@@ -1,0 +1,7 @@
+C:\Users\Bryce\Documents2\PisteNet\fencing-electronic-design-project-kilo\firmware\Fencing_Alpha.cydsn\Fencing_Alpha.cyprj|b1fe2386-3cba-46eb-8efe-ee7de0dbbaf9
+C:\Program Files (x86)\Cypress\PSoC Creator\4.4\PSoC Creator\psoc\content\default\CyAnnotationLibrary\CyAnnotationLibrary.cylib\CyAnnotationLibrary.cyprj|17885d89-7653-40e0-b1da-1338c3b96bb2
+C:\Users\Bryce\Documents\PSoC Creator\4.4\Downloads ( 4.4).cylib\Downloads ( 4.4).cyprj|9abca1d7-151e-40e1-a7bb-1f196845150c
+C:\Program Files (x86)\Cypress\PSoC Creator\4.4\PSoC Creator\psoc\content\cycomponentlibraryupdates\CyComponentLibraryUpdates.cylib\CyComponentLibraryUpdates.cyprj|b757559b-c7b3-40db-9cd1-e2261943a6cf
+C:\Program Files (x86)\Cypress\PSoC Creator\4.4\PSoC Creator\psoc\content\cycomponentlibrary\CyComponentLibrary.cylib\CyComponentLibrary.cyprj|5e161780-a5fb-4bea-b2dc-dec1f7f534e5
+C:\Program Files (x86)\Cypress\PSoC Creator\4.4\PSoC Creator\psoc\content\cyprimitives\CyPrimitives.cylib\CyPrimitives.cyprj|6dd83b0a-98fe-4eff-87e5-671ae6de0016
+C:\Users\Bryce\Documents2\PisteNet\fencing-electronic-design-project-kilo\firmware\Fencing_Alpha.cydsn\CE220169_TCPWM_Periodic_Interrupt01.cydsn\CE220169_TCPWM_Periodic_Interrupt01.cyprj|3b51e54f-f29f-458f-bf23-7228c8525c18
